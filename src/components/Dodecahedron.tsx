@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
@@ -9,6 +9,7 @@ import * as THREE from "three";
 const RADIUS = 2.5;
 const phi = (1 + Math.sqrt(5)) / 2;
 const AUTO_ROTATE_SPEED = 0.15;
+const PANEL_DELAY_MS = 16_000;
 
 // Pentagon clip-path matching a centered regular pentagon
 const PENTAGON_CLIP =
@@ -31,7 +32,6 @@ function FaceCard({
     children: React.ReactNode;
     index?: number;
 }) {
-    // Stagger fade-in: starts after loader (15s) + fade (1s)
     const delay = 16 + index * 0.3;
     return (
         <div
@@ -202,7 +202,7 @@ const FACE_DEFINITIONS: FaceData[] = [
     },
 ];
 
-// ─── Precomputed face positions & quaternions ────────────────────────────────
+// ─── Extract face centers & orientations from actual geometry ─────────────────
 interface ComputedFace {
     position: THREE.Vector3;
     quaternion: THREE.Quaternion;
@@ -210,19 +210,67 @@ interface ComputedFace {
 }
 
 function computeFaces(): ComputedFace[] {
-    return FACE_DEFINITIONS.map((face) => {
-        const dir = new THREE.Vector3(...face.direction).normalize();
-        const position = dir.clone().multiplyScalar(RADIUS);
+    const geo = new THREE.DodecahedronGeometry(RADIUS, 0);
+    const posAttr = geo.getAttribute("position");
+    const index = geo.getIndex();
+    if (!index) return [];
 
-        // Use lookAt for consistent face orientation with stable "up"
-        const obj = new THREE.Object3D();
-        obj.position.copy(position);
-        obj.lookAt(0, 0, 0);
-        // lookAt makes -Z point toward origin; flip so HTML faces outward
-        obj.rotateY(Math.PI);
-        const quaternion = obj.quaternion.clone();
+    // Group triangles by shared normal → recovers the 12 pentagonal faces
+    const groups: { verts: THREE.Vector3[]; normal: THREE.Vector3 }[] = [];
 
-        return { position, quaternion, data: face };
+    for (let i = 0; i < index.count; i += 3) {
+        const a = new THREE.Vector3().fromBufferAttribute(posAttr, index.getX(i));
+        const b = new THREE.Vector3().fromBufferAttribute(posAttr, index.getX(i + 1));
+        const c = new THREE.Vector3().fromBufferAttribute(posAttr, index.getX(i + 2));
+        const normal = new THREE.Triangle(a, b, c).getNormal(new THREE.Vector3());
+
+        let matched = false;
+        for (const g of groups) {
+            if (g.normal.dot(normal) > 0.99) {
+                g.verts.push(a, b, c);
+                matched = true;
+                break;
+            }
+        }
+        if (!matched) {
+            groups.push({ verts: [a, b, c], normal });
+        }
+    }
+
+    return groups.map((g) => {
+        // Centroid of all triangle vertices on this face
+        const center = new THREE.Vector3();
+        g.verts.forEach((v) => center.add(v));
+        center.divideScalar(g.verts.length);
+
+        // Match to closest FACE_DEFINITION by normal direction
+        const n = g.normal.clone().normalize();
+        let best = FACE_DEFINITIONS[0];
+        let bestDot = -Infinity;
+        for (const fd of FACE_DEFINITIONS) {
+            const d = new THREE.Vector3(...fd.direction).normalize().dot(n);
+            if (d > bestDot) {
+                bestDot = d;
+                best = fd;
+            }
+        }
+
+        // Build orientation from geometry: use first unique vertex for "up" reference
+        const unique: THREE.Vector3[] = [];
+        for (const v of g.verts) {
+            if (!unique.some((u) => u.distanceTo(v) < 0.001)) unique.push(v);
+        }
+        const up = unique[0].clone().sub(center).normalize();
+        const zAxis = n;
+        const xAxis = new THREE.Vector3().crossVectors(up, zAxis).normalize();
+        const yAxis = new THREE.Vector3().crossVectors(zAxis, xAxis).normalize();
+        const mat = new THREE.Matrix4().makeBasis(xAxis, yAxis, zAxis);
+        const quaternion = new THREE.Quaternion().setFromRotationMatrix(mat);
+
+        // Position just above the surface
+        const position = center.clone().add(n.clone().multiplyScalar(0.03));
+
+        return { position, quaternion, data: best };
     });
 }
 
@@ -231,8 +279,13 @@ export default function Dodecahedron() {
     const meshRef = useRef<THREE.Mesh>(null);
     const groupRef = useRef<THREE.Group>(null);
     const faces = useMemo(() => computeFaces(), []);
+    const [showPanels, setShowPanels] = useState(false);
 
-    // Gentle passive rotation
+    useEffect(() => {
+        const timer = setTimeout(() => setShowPanels(true), PANEL_DELAY_MS);
+        return () => clearTimeout(timer);
+    }, []);
+
     useFrame((_state, delta) => {
         if (groupRef.current) {
             groupRef.current.rotation.y += delta * AUTO_ROTATE_SPEED;
@@ -241,7 +294,7 @@ export default function Dodecahedron() {
 
     return (
         <group ref={groupRef} position={[1.5, 0, 0]}>
-            {/* Translucent geometry base */}
+            {/* Geometry base */}
             <mesh ref={meshRef}>
                 <dodecahedronGeometry args={[RADIUS, 0]} />
                 <meshStandardMaterial
@@ -252,7 +305,7 @@ export default function Dodecahedron() {
                 />
             </mesh>
 
-            {/* Thin black pentagonal edges */}
+            {/* Black pentagonal edges */}
             <lineSegments>
                 <edgesGeometry
                     args={[new THREE.DodecahedronGeometry(RADIUS, 0), 1]}
@@ -260,22 +313,23 @@ export default function Dodecahedron() {
                 <lineBasicMaterial color="#000000" />
             </lineSegments>
 
-            {/* HTML overlays on each face */}
-            {faces.map((face) => (
-                <group
-                    key={face.data.label}
-                    position={face.position}
-                    quaternion={face.quaternion}
-                >
-                    <Html
-                        transform
-                        distanceFactor={8}
-                        style={{ pointerEvents: "auto", userSelect: "none" }}
+            {/* HTML overlays — extracted from actual geometry for perfect alignment */}
+            {showPanels &&
+                faces.map((face) => (
+                    <group
+                        key={face.data.label}
+                        position={face.position}
+                        quaternion={face.quaternion}
                     >
-                        {face.data.content}
-                    </Html>
-                </group>
-            ))}
+                        <Html
+                            transform
+                            distanceFactor={6}
+                            style={{ pointerEvents: "auto", userSelect: "none" }}
+                        >
+                            {face.data.content}
+                        </Html>
+                    </group>
+                ))}
         </group>
     );
 }

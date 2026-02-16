@@ -1,34 +1,20 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    CSS 3D Dodecahedron Loader
-   
-   12 faces positioned using icosahedron-vertex math.
-   CSS uses Y-DOWN, so all Y translations and rotateX signs are inverted
-   from the standard Y-up math.
-   
-   For each face normal (nx, ny, nz) in Y-up space:
-     CSS translateY = -(ny * insphere) * --size
-     CSS rotateX = asin(ny)  [not -asin(ny)]
-     CSS rotateY = atan2(nx, nz)
-   
-   Constants: p = 0.344, q = 0.557 (position multipliers)
-   Angles: 31.7° and 58.3°
+   Starts centered + small, grows and slides right to match Three.js position
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .loader {
     --size: 300px;
-    --face-color: #d4d4d8;
-    --face-color-alt: #c4c4cc;
-    --edge-color: rgba(0, 0, 0, 0.4);
-    --edge-width: 1.5px;
+    --border-color: #000000;
+    --border-width: 3px;
+    --fill: #d4d4d8;
+    --fill-alt: #c4c4cc;
     --p: 0.344;
     --q: 0.557;
 
     position: fixed;
     inset: 0;
     z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     background: #ffffff;
     opacity: 1;
     transition: opacity 1s ease;
@@ -39,12 +25,28 @@
     pointer-events: none;
 }
 
-/* ─── Dodecahedron container — positioned to match Three.js ──────────────── */
+/* ─── Dodecahedron container ─────────────────────────────────────────────── */
+/* Final position: left 59% (matching Three.js).
+   Animation: starts at center (50%), small → slides right, grows to full size */
 .dodecahedronWrap {
     position: absolute;
     top: 50%;
     left: 59%;
-    transform: translate(-50%, -50%);
+    animation: moveAndGrow 7s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+@keyframes moveAndGrow {
+    0% {
+        transform: translate(-50%, -50%) translateX(-9vw) scale(0.4);
+    }
+
+    30% {
+        transform: translate(-50%, -50%) translateX(-9vw) scale(0.5);
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+    }
 }
 
 .perspective {
@@ -56,7 +58,7 @@
     height: var(--size);
     position: relative;
     transform-style: preserve-3d;
-    animation: rotate 24s linear infinite;
+    animation: rotate 10s linear infinite;
 }
 
 @keyframes rotate {
@@ -70,11 +72,14 @@
 }
 
 /* ─── Pentagon face ──────────────────────────────────────────────────────── */
+/* The face div itself is black (acts as border).
+   ::after is the colored interior, inset to reveal the border. */
 .face {
     position: absolute;
     width: var(--size);
     height: var(--size);
     clip-path: polygon(50% 0%, 97.55% 34.55%, 79.39% 90.45%, 20.61% 90.45%, 2.45% 34.55%);
+    background: var(--border-color);
     backface-visibility: hidden;
     left: 50%;
     top: 50%;
@@ -82,99 +87,87 @@
     margin-top: calc(var(--size) / -2);
 }
 
+/* Colored fill — inset to expose the black border underneath */
 .face::after {
     content: "";
     position: absolute;
-    inset: 0;
+    inset: var(--border-width);
     clip-path: polygon(50% 0%, 97.55% 34.55%, 79.39% 90.45%, 20.61% 90.45%, 2.45% 34.55%);
-    box-shadow: inset 0 0 0 var(--edge-width) var(--edge-color);
+    background: var(--face-fill, var(--fill));
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   12 FACES — CSS Y-down corrected
-   Y positions negated, rotateX signs flipped from Y-up math
+   12 FACES — sandbox-tuned transforms with rotateZ corrections
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Group 1: normals (0, ±a, ±b) — a=0.526, b=0.851 */
-/* Face 1: (0, +0.526, +0.851) → Y goes UP in screen */
+/* --- Group 1: normals (0, ±a, ±b) --- */
 .f1 {
-    background: var(--face-color);
-    transform: translate3d(0px, calc(var(--size) * var(--p) * -1), calc(var(--size) * var(--q))) rotateY(0deg) rotateX(31.7deg);
+    --face-fill: var(--fill);
+    transform: translate3d(0px, calc(var(--size) * var(--p) * -1), calc(var(--size) * var(--q))) rotateY(0deg) rotateX(31.7deg) rotateZ(72deg);
 }
 
-/* Face 2: (0, -0.526, -0.851) → Y goes DOWN in screen */
 .f2 {
-    background: var(--face-color-alt);
-    transform: translate3d(0px, calc(var(--size) * var(--p)), calc(var(--size) * var(--q) * -1)) rotateY(180deg) rotateX(-31.7deg);
+    --face-fill: var(--fill-alt);
+    transform: translate3d(0px, calc(var(--size) * var(--p)), calc(var(--size) * var(--q) * -1)) rotateY(180deg) rotateX(-31.7deg) rotateZ(36deg);
 }
 
-/* Face 3: (0, +0.526, -0.851) */
 .f3 {
-    background: var(--face-color);
-    transform: translate3d(0px, calc(var(--size) * var(--p) * -1), calc(var(--size) * var(--q) * -1)) rotateY(180deg) rotateX(31.7deg);
+    --face-fill: var(--fill);
+    transform: translate3d(0px, calc(var(--size) * var(--p) * -1), calc(var(--size) * var(--q) * -1)) rotateY(180deg) rotateX(31.7deg) rotateZ(72deg);
 }
 
-/* Face 4: (0, -0.526, +0.851) */
 .f4 {
-    background: var(--face-color-alt);
-    transform: translate3d(0px, calc(var(--size) * var(--p)), calc(var(--size) * var(--q))) rotateY(0deg) rotateX(-31.7deg);
+    --face-fill: var(--fill-alt);
+    transform: translate3d(0px, calc(var(--size) * var(--p)), calc(var(--size) * var(--q))) rotateY(0deg) rotateX(-31.7deg) rotateZ(36deg);
 }
 
-/* Group 2: normals (±a, ±b, 0) — a=0.526, b=0.851 */
-/* Face 5: (+0.526, +0.851, 0) */
+/* --- Group 2: normals (±a, ±b, 0) --- */
 .f5 {
-    background: var(--face-color);
-    transform: translate3d(calc(var(--size) * var(--p)), calc(var(--size) * var(--q) * -1), 0px) rotateY(90deg) rotateX(58.3deg);
+    --face-fill: var(--fill);
+    transform: translate3d(calc(var(--size) * var(--p)), calc(var(--size) * var(--q) * -1), 0px) rotateY(90deg) rotateX(58.3deg) rotateZ(36deg);
 }
 
-/* Face 6: (-0.526, +0.851, 0) */
 .f6 {
-    background: var(--face-color-alt);
-    transform: translate3d(calc(var(--size) * var(--p) * -1), calc(var(--size) * var(--q) * -1), 0px) rotateY(-90deg) rotateX(58.3deg);
+    --face-fill: var(--fill-alt);
+    transform: translate3d(calc(var(--size) * var(--p) * -1), calc(var(--size) * var(--q) * -1), 0px) rotateY(-90deg) rotateX(58.3deg) rotateZ(36deg);
 }
 
-/* Face 7: (+0.526, -0.851, 0) */
 .f7 {
-    background: var(--face-color);
-    transform: translate3d(calc(var(--size) * var(--p)), calc(var(--size) * var(--q)), 0px) rotateY(90deg) rotateX(-58.3deg);
+    --face-fill: var(--fill);
+    transform: translate3d(calc(var(--size) * var(--p)), calc(var(--size) * var(--q)), 0px) rotateY(90deg) rotateX(-58.3deg) rotateZ(0deg);
 }
 
-/* Face 8: (-0.526, -0.851, 0) */
 .f8 {
-    background: var(--face-color-alt);
-    transform: translate3d(calc(var(--size) * var(--p) * -1), calc(var(--size) * var(--q)), 0px) rotateY(-90deg) rotateX(-58.3deg);
+    --face-fill: var(--fill-alt);
+    transform: translate3d(calc(var(--size) * var(--p) * -1), calc(var(--size) * var(--q)), 0px) rotateY(-90deg) rotateX(-58.3deg) rotateZ(0deg);
 }
 
-/* Group 3: normals (±b, 0, ±a) — b=0.851, a=0.526 */
-/* Face 9: (+0.851, 0, +0.526) */
+/* --- Group 3: normals (±b, 0, ±a) --- */
 .f9 {
-    background: var(--face-color);
-    transform: translate3d(calc(var(--size) * var(--q)), 0px, calc(var(--size) * var(--p))) rotateY(58.3deg) rotateX(0deg);
+    --face-fill: var(--fill);
+    transform: translate3d(calc(var(--size) * var(--q)), 0px, calc(var(--size) * var(--p))) rotateY(58.3deg) rotateX(0deg) rotateZ(54deg);
 }
 
-/* Face 10: (-0.851, 0, +0.526) */
 .f10 {
-    background: var(--face-color-alt);
-    transform: translate3d(calc(var(--size) * var(--q) * -1), 0px, calc(var(--size) * var(--p))) rotateY(-58.3deg) rotateX(0deg);
+    --face-fill: var(--fill-alt);
+    transform: translate3d(calc(var(--size) * var(--q) * -1), 0px, calc(var(--size) * var(--p))) rotateY(-58.3deg) rotateX(0deg) rotateZ(18deg);
 }
 
-/* Face 11: (+0.851, 0, -0.526) */
 .f11 {
-    background: var(--face-color);
-    transform: translate3d(calc(var(--size) * var(--q)), 0px, calc(var(--size) * var(--p) * -1)) rotateY(121.7deg) rotateX(0deg);
+    --face-fill: var(--fill);
+    transform: translate3d(calc(var(--size) * var(--q)), 0px, calc(var(--size) * var(--p) * -1)) rotateY(121.7deg) rotateX(0deg) rotateZ(16deg);
 }
 
-/* Face 12: (-0.851, 0, -0.526) */
 .f12 {
-    background: var(--face-color-alt);
-    transform: translate3d(calc(var(--size) * var(--q) * -1), 0px, calc(var(--size) * var(--p) * -1)) rotateY(-121.7deg) rotateX(0deg);
+    --face-fill: var(--fill-alt);
+    transform: translate3d(calc(var(--size) * var(--q) * -1), 0px, calc(var(--size) * var(--p) * -1)) rotateY(-121.7deg) rotateX(0deg) rotateZ(54deg);
 }
 
 /* ─── Loading text ───────────────────────────────────────────────────────── */
 .loadingText {
     position: absolute;
     bottom: 20%;
-    left: 59%;
+    left: 50%;
     transform: translateX(-50%);
     font-family: var(--font-geist-mono), monospace;
     font-size: 0.75rem;

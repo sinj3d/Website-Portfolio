@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CSS 3D Dodecahedron Sandbox</title>
+    <style>
+        /* ═══════════════════════════════════════════════════════════════════════════
+   CSS 3D Dodecahedron
+   
+   12 faces positioned using icosahedron-vertex math.
+   CSS uses Y-DOWN, so all Y translations and rotateX signs are inverted
+   from the standard Y-up math.
+   
+   For each face normal (nx, ny, nz) in Y-up space:
+     CSS translateY = -(ny * insphere) * --size
+     CSS rotateX    = asin(ny)   [not -asin(ny)]
+     CSS rotateY    = atan2(nx, nz)
+   
+   Constants: p = 0.344, q = 0.557  (position multipliers)
+   Angles:    31.7° and 58.3°
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #ffffff;
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+        }
+
+        /* ─── Variables ──────────────────────────────────────────────────────────── */
+        .scene-wrap {
+            --size: 300px;
+            --face-color: #d4d4d8;
+            --face-color-alt: #c4c4cc;
+            --edge-color: rgba(0, 0, 0, 0.4);
+            --edge-width: 1.5px;
+            --p: 0.344;
+            --q: 0.557;
+
+            perspective: 1200px;
+        }
+
+        /* ─── Scene ──────────────────────────────────────────────────────────────── */
+        .scene {
+            width: var(--size);
+            height: var(--size);
+            position: relative;
+            transform-style: preserve-3d;
+            animation: rotate 24s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% {
+                transform: rotateX(0deg) rotateY(0deg);
+            }
+
+            100% {
+                transform: rotateX(360deg) rotateY(360deg);
+            }
+        }
+
+        /* ─── Pentagon face ──────────────────────────────────────────────────────── */
+        .face {
+            position: absolute;
+            width: var(--size);
+            height: var(--size);
+            clip-path: polygon(50% 0%, 97.55% 34.55%, 79.39% 90.45%, 20.61% 90.45%, 2.45% 34.55%);
+            backface-visibility: hidden;
+            left: 50%;
+            top: 50%;
+            margin-left: calc(var(--size) / -2);
+            margin-top: calc(var(--size) / -2);
+        }
+
+        .face::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            clip-path: polygon(50% 0%, 97.55% 34.55%, 79.39% 90.45%, 20.61% 90.45%, 2.45% 34.55%);
+            box-shadow: inset 0 0 0 6px rgba(0, 0, 0, 0.8);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════════
+   12 FACES — CSS Y-down corrected
+   Y positions negated, rotateX signs flipped from Y-up math
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+        /* --- Group 1: normals (0, ±a, ±b) — a=0.526, b=0.851 --- */
+
+        /* Face 1: (0, +0.526, +0.851) → Y goes UP on screen */
+        .f1 {
+            background: #ef4444;
+            /* red */
+            transform: translate3d(0px, calc(var(--size) * var(--p) * -1), calc(var(--size) * var(--q))) rotateY(0deg) rotateX(31.7deg) rotateZ(72deg);
+        }
+
+        /* Face 2: (0, -0.526, -0.851) → Y goes DOWN on screen */
+        .f2 {
+            background: #f97316;
+            /* orange */
+            transform: translate3d(0px, calc(var(--size) * var(--p)), calc(var(--size) * var(--q) * -1)) rotateY(180deg) rotateX(-31.7deg) rotateZ(36deg);
+        }
+
+        /* Face 3: (0, +0.526, -0.851) */
+        .f3 {
+            background: #eab308;
+            /* yellow */
+            transform: translate3d(0px, calc(var(--size) * var(--p) * -1), calc(var(--size) * var(--q) * -1)) rotateY(180deg) rotateX(31.7deg) rotateZ(72deg);
+        }
+
+        /* Face 4: (0, -0.526, +0.851) */
+        .f4 {
+            background: #22c55e;
+            /* green */
+            transform: translate3d(0px, calc(var(--size) * var(--p)), calc(var(--size) * var(--q))) rotateY(0deg) rotateX(-31.7deg) rotateZ(36deg);
+        }
+
+        /* --- Group 2: normals (±a, ±b, 0) — a=0.526, b=0.851 --- */
+
+        /* Face 5: (+0.526, +0.851, 0) */
+        .f5 {
+            background: #14b8a6;
+            /* teal */
+            transform: translate3d(calc(var(--size) * var(--p)), calc(var(--size) * var(--q) * -1), 0px) rotateY(90deg) rotateX(58.3deg) rotateZ(36deg);
+        }
+
+        /* Face 6: (-0.526, +0.851, 0) */
+        .f6 {
+            background: #06b6d4;
+            /* cyan */
+            transform: translate3d(calc(var(--size) * var(--p) * -1), calc(var(--size) * var(--q) * -1), 0px) rotateY(-90deg) rotateX(58.3deg) rotateZ(36deg);
+        }
+
+        /* Face 7: (+0.526, -0.851, 0) */
+        .f7 {
+            background: #3b82f6;
+            /* blue */
+            transform: translate3d(calc(var(--size) * var(--p)), calc(var(--size) * var(--q)), 0px) rotateY(90deg) rotateX(-58.3deg) rotateZ(0deg);
+        }
+
+        /* Face 8: (-0.526, -0.851, 0) */
+        .f8 {
+            background: #6366f1;
+            /* indigo */
+            transform: translate3d(calc(var(--size) * var(--p) * -1), calc(var(--size) * var(--q)), 0px) rotateY(-90deg) rotateX(-58.3deg) rotateZ(0deg);
+        }
+
+        /* --- Group 3: normals (±b, 0, ±a) — b=0.851, a=0.526 --- */
+
+        /* Face 9: (+0.851, 0, +0.526) */
+        .f9 {
+            background: #8b5cf6;
+            /* violet */
+            transform: translate3d(calc(var(--size) * var(--q)), 0px, calc(var(--size) * var(--p))) rotateY(58.3deg) rotateX(0deg) rotateZ(54deg);
+        }
+
+        /* Face 10: (-0.851, 0, +0.526) */
+        .f10 {
+            background: #d946ef;
+            /* fuchsia */
+            transform: translate3d(calc(var(--size) * var(--q) * -1), 0px, calc(var(--size) * var(--p))) rotateY(-58.3deg) rotateX(0deg) rotateZ(18deg);
+        }
+
+        /* Face 11: (+0.851, 0, -0.526) */
+        .f11 {
+            background: #ec4899;
+            /* pink */
+            transform: translate3d(calc(var(--size) * var(--q)), 0px, calc(var(--size) * var(--p) * -1)) rotateY(121.7deg) rotateX(0deg) rotateZ(16deg);
+        }
+
+        /* Face 12: (-0.851, 0, -0.526) */
+        .f12 {
+            background: #a3a3a3;
+            /* gray */
+            transform: translate3d(calc(var(--size) * var(--q) * -1), 0px, calc(var(--size) * var(--p) * -1)) rotateY(-121.7deg) rotateX(0deg) rotateZ(54deg);
+        }
+
+        /* ─── Loading text ───────────────────────────────────────────────────────── */
+        .loading-text {
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: monospace;
+            font-size: 0.75rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: rgba(0, 0, 0, 0.3);
+            animation: textPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes textPulse {
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="scene-wrap">
+        <div class="scene">
+            <div class="face f1"></div>
+            <div class="face f2"></div>
+            <div class="face f3"></div>
+            <div class="face f4"></div>
+            <div class="face f5"></div>
+            <div class="face f6"></div>
+            <div class="face f7"></div>
+            <div class="face f8"></div>
+            <div class="face f9"></div>
+            <div class="face f10"></div>
+            <div class="face f11"></div>
+            <div class="face f12"></div>
+        </div>
+    </div>
+
+    <span class="loading-text">Initializing</span>
+
+</body>
+
+</html>
