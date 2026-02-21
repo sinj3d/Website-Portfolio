@@ -10,6 +10,7 @@ import * as THREE from "three";
 const RADIUS = 2.5;
 const phi = (1 + Math.sqrt(5)) / 2;
 const ROTATE_SPEED = (2 * Math.PI) / 30; // 360° per 30s (slow tumble)
+const LINE_THICKNESS = 0.025; // Thicker wireframe
 
 // Phase timing (seconds)
 const SPIN_PHASE = 2;     // pentagon spins in place
@@ -100,13 +101,13 @@ function extractSortedEdges(geo: THREE.BufferGeometry): SortedEdge[] {
     return segs;
 }
 
-// ─── Flat pentagon (point-down) geometry ─────────────────────────────────────
+
 function createPentagonGeo() {
-    const a = RADIUS * 4 / (Math.sqrt(3) * (1 + Math.sqrt(5)));
+    const a = (RADIUS * 4) / (Math.sqrt(3) * (1 + Math.sqrt(5)));
     const faceR = a / (2 * Math.sin(Math.PI / 5));
     const shape = new THREE.Shape();
     for (let i = 0; i < 5; i++) {
-        const angle = -Math.PI / 2 + Math.PI / 2 + i * (2 * Math.PI) / 5; // +36° (total +90°) to align with dodec
+        const angle = -Math.PI / 2 + Math.PI / 2 + i * (2 * Math.PI) / 5;
         const x = faceR * Math.cos(angle);
         const y = faceR * Math.sin(angle);
         if (i === 0) shape.moveTo(x, y);
@@ -114,6 +115,18 @@ function createPentagonGeo() {
     }
     shape.closePath();
     return new THREE.ShapeGeometry(shape);
+}
+
+
+function getPentagonPoints() {
+    const a = (RADIUS * 4) / (Math.sqrt(3) * (1 + Math.sqrt(5)));
+    const faceR = a / (2 * Math.sin(Math.PI / 5));
+    const points: THREE.Vector3[] = [];
+    for (let i = 0; i <= 5; i++) {
+        const angle = -Math.PI / 2 + Math.PI / 2 + i * (2 * Math.PI) / 5;
+        points.push(new THREE.Vector3(faceR * Math.cos(angle), faceR * Math.sin(angle), 0));
+    }
+    return points;
 }
 
 // Pentagon clip-path matching a centered regular pentagon
@@ -154,8 +167,8 @@ function FaceCard({
                 onMouseLeave={onMouseLeave}
                 className="animate-line flex flex-col items-center justify-center gap-2 p-5 text-center cursor-pointer transition-transform hover:scale-105"
                 style={{
-                    width: "230px",
-                    height: "230px",
+                    width: "205px",
+                    height: "205px",
                     clipPath: PENTAGON_CLIP,
                     background: "rgba(255, 255, 255, 1)",
                     border: "1.5px solid rgba(0,0,0,0.15)",
@@ -489,10 +502,16 @@ function computeFaces(geo: THREE.DodecahedronGeometry | THREE.BufferGeometry, al
     }
 
     return groups.map((g) => {
-        // Centroid of all triangle vertices on this face
+        // Extract the 5 unique vertices of the pentagon explicitly
+        const unique: THREE.Vector3[] = [];
+        for (const v of g.verts) {
+            if (!unique.some((u) => u.distanceTo(v) < 0.001)) unique.push(v);
+        }
+
+        // True geometric centroid using unique vertices
         const center = new THREE.Vector3();
-        g.verts.forEach((v) => center.add(v));
-        center.divideScalar(g.verts.length);
+        unique.forEach((v) => center.add(v));
+        center.divideScalar(unique.length);
 
         // Match to closest FACE_DEFINITION by normal direction
         // Rotate the definition direction by alignQ so it matches the rotated geometry
@@ -509,20 +528,36 @@ function computeFaces(geo: THREE.DodecahedronGeometry | THREE.BufferGeometry, al
             }
         }
 
-        // Build orientation from geometry: use first unique vertex for "up" reference
-        const unique: THREE.Vector3[] = [];
-        for (const v of g.verts) {
-            if (!unique.some((u) => u.distanceTo(v) < 0.001)) unique.push(v);
-        }
-        const up = unique[0].clone().sub(center).normalize();
+        // Build orientation from geometry: compute a visual up based on world orientation
         const zAxis = n;
+        let worldUp = new THREE.Vector3(0, 1, 0);
+        if (Math.abs(n.dot(worldUp)) > 0.99) {
+            worldUp = new THREE.Vector3(0, 0, 1);
+        }
+        const visualUp = worldUp.clone().sub(n.clone().multiplyScalar(worldUp.dot(n))).normalize();
+
+        // CSS "top" (Y=0) is mapped to local +Y by Drei's CSS3DObject. We want CSS top to be a geometric vertex.
+        // Therefore, local +Y (up) must point from center to a vertex.
+        // We pick the vertex that points closest to visualUp for maximum text readability.
+        let bestVertex = unique[0];
+        let maxDot = -Infinity;
+        for (const v of unique) {
+            const dir = v.clone().sub(center).normalize();
+            const d = dir.dot(visualUp);
+            if (d > maxDot) {
+                maxDot = d;
+                bestVertex = v;
+            }
+        }
+
+        const up = bestVertex.clone().sub(center).normalize();
         const xAxis = new THREE.Vector3().crossVectors(up, zAxis).normalize();
         const yAxis = new THREE.Vector3().crossVectors(zAxis, xAxis).normalize();
         const mat = new THREE.Matrix4().makeBasis(xAxis, yAxis, zAxis);
         const quaternion = new THREE.Quaternion().setFromRotationMatrix(mat);
 
-        // Position just above the surface
-        const position = center.clone().add(n.clone().multiplyScalar(0.03));
+        // Position exactly on the surface to prevent parallax clipping
+        const position = center.clone();
 
         return { position, quaternion, data: best };
     });
@@ -561,6 +596,7 @@ function FacePanel({ face, onHoverFace }: { face: ComputedFace, onHoverFace: (fa
         <group ref={groupRef} position={face.position} quaternion={face.quaternion}>
             <Html
                 transform
+                center
                 distanceFactor={6}
                 zIndexRange={[100, 0]}
             >
@@ -579,7 +615,7 @@ function FacePanel({ face, onHoverFace }: { face: ComputedFace, onHoverFace: (fa
 export default function Dodecahedron() {
     const groupRef = useRef<THREE.Group>(null);
     const pentGroupRef = useRef<THREE.Group>(null);
-    const edgeLinesRef = useRef<THREE.LineSegments>(null);
+    const edgeLinesGroupRef = useRef<THREE.Group>(null);
 
     const [hoveredFace, setHoveredFace] = useState<FaceData | null>(null);
     const hoveredFaceRef = useRef<FaceData | null>(null);
@@ -593,24 +629,36 @@ export default function Dodecahedron() {
     const { geo: alignedGeo, alignQ, bottomCenter } = useMemo(() => createAlignedDodecGeo(), []);
     const faces = useMemo(() => computeFaces(alignedGeo, alignQ), [alignedGeo, alignQ]);
     const pentGeo = useMemo(() => createPentagonGeo(), []);
-    const pentEdgesGeo = useMemo(() => new THREE.EdgesGeometry(pentGeo), [pentGeo]);
+    const pentPoints = useMemo(() => getPentagonPoints(), []);
     const [showPanels, setShowPanels] = useState(false);
 
     // Sorted edges from aligned geometry
     const sortedEdges = useMemo(() => extractSortedEdges(alignedGeo), [alignedGeo]);
-    // Bottom face center Y for edge interpolation origin
     const bcx = bottomCenter.x, bcy = bottomCenter.y, bcz = bottomCenter.z;
-    const morphGeo = useMemo(() => {
-        const geo = new THREE.BufferGeometry();
-        const positions = new Float32Array(sortedEdges.length * 6);
-        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        return geo;
-    }, [sortedEdges]);
+
+    const edgeCylindersRef = useRef<THREE.Mesh[]>([]);
+    const pentCylindersRef = useRef<THREE.Mesh[]>([]);
 
     useEffect(() => {
         const timer = setTimeout(() => setShowPanels(true), PANEL_DELAY_MS);
         return () => clearTimeout(timer);
     }, []);
+
+    // Helper to update a cylinder mesh between two points
+    const updateCylinder = (mesh: THREE.Mesh, p1: THREE.Vector3, p2: THREE.Vector3) => {
+        const dist = p1.distanceTo(p2);
+        if (dist < 0.0001) {
+            mesh.visible = false;
+            return;
+        }
+        mesh.visible = true;
+        mesh.position.copy(p1).lerp(p2, 0.5);
+        mesh.scale.set(1, dist, 1);
+        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), p2.clone().sub(p1).normalize());
+    };
+
+    const v1 = useMemo(() => new THREE.Vector3(), []);
+    const v2 = useMemo(() => new THREE.Vector3(), []);
 
     // Tilt quaternion: pentagon +Z normal → face-down -Y
     const tiltQuat = useMemo(
@@ -636,7 +684,6 @@ export default function Dodecahedron() {
         const elapsed = clock.getElapsedTime();
 
         const pent = pentGroupRef.current;
-        const edgeLines = edgeLinesRef.current;
 
         if (elapsed < SPIN_PHASE) {
             // Phase 0: Pentagon spins in place (facing camera) on Z axis + scales up
@@ -652,7 +699,12 @@ export default function Dodecahedron() {
                 pent.scale.setScalar(Math.max(0.01, scale));
                 pent.position.set(0, 0, 0);
             }
-            if (edgeLines) edgeLines.visible = false;
+            if (edgeLinesGroupRef.current) edgeLinesGroupRef.current.visible = false;
+
+            // Update initial pentagon cylinders
+            pentCylindersRef.current.forEach((mesh, i) => {
+                if (mesh) updateCylinder(mesh, pentPoints[i], pentPoints[i + 1]);
+            });
 
         } else if (elapsed < TILT_END) {
             // Phase 1: Pentagon tilts + moves from center to bottom face position
@@ -666,7 +718,11 @@ export default function Dodecahedron() {
                 pent.scale.setScalar(1);
                 pent.position.lerpVectors(originVec, bottomCenter, ease);
             }
-            if (edgeLines) edgeLines.visible = false;
+            if (edgeLinesGroupRef.current) edgeLinesGroupRef.current.visible = false;
+
+            pentCylindersRef.current.forEach((mesh, i) => {
+                if (mesh) updateCylinder(mesh, pentPoints[i], pentPoints[i + 1]);
+            });
 
         } else if (elapsed < EDGE_DRAW_END) {
             // Phase 2: edges draw bottom-to-top from pentagon corners
@@ -676,42 +732,37 @@ export default function Dodecahedron() {
             const p = (elapsed - TILT_END) / (EDGE_DRAW_END - TILT_END);
             const ease = 1 - Math.pow(1 - p, 2); // ease-out quad
 
-            // Pentagon shrinks away at start of edge drawing
+            // Pentagon disappears in place at start of edge drawing
             if (pent) {
-                pent.visible = ease < 0.4;
-                pent.scale.setScalar(Math.max(0, 1 - ease * 3));
+                pent.visible = ease < 0.2;
+                pent.scale.setScalar(1);
                 pent.position.copy(bottomCenter);
             }
 
-            // Reveal edges bottom-to-top
-            if (edgeLines) {
-                edgeLines.visible = true;
-                const posAttr = morphGeo.getAttribute('position') as THREE.BufferAttribute;
-                const arr = posAttr.array as Float32Array;
+            pentCylindersRef.current.forEach((mesh, i) => {
+                if (mesh) updateCylinder(mesh, pentPoints[i], pentPoints[i + 1]);
+            });
+
+            // Reveal edges bottom-to-top using cylinders
+            if (edgeLinesGroupRef.current) {
+                edgeLinesGroupRef.current.visible = true;
                 const total = sortedEdges.length;
                 const revealCount = Math.ceil(ease * total);
 
                 for (let i = 0; i < total; i++) {
-                    const off = i * 6;
+                    const mesh = edgeCylindersRef.current[i];
+                    if (!mesh) continue;
                     const seg = sortedEdges[i];
                     if (i < revealCount) {
                         const edgeProgress = Math.min(1, (ease * total - i) / 3);
                         const ep = edgeProgress * edgeProgress;
-                        arr[off] = bcx + (seg.ax - bcx) * ep;
-                        arr[off + 1] = bcy + (seg.ay - bcy) * ep;
-                        arr[off + 2] = bcz + (seg.az - bcz) * ep;
-                        arr[off + 3] = bcx + (seg.bx - bcx) * ep;
-                        arr[off + 4] = bcy + (seg.by - bcy) * ep;
-                        arr[off + 5] = bcz + (seg.bz - bcz) * ep;
+                        v1.set(bcx + (seg.ax - bcx) * ep, bcy + (seg.ay - bcy) * ep, bcz + (seg.az - bcz) * ep);
+                        v2.set(bcx + (seg.bx - bcx) * ep, bcy + (seg.by - bcy) * ep, bcz + (seg.bz - bcz) * ep);
+                        updateCylinder(mesh, v1, v2);
                     } else {
-                        // Not yet revealed — hide at bottom center
-                        arr[off] = arr[off + 3] = bcx;
-                        arr[off + 1] = arr[off + 4] = bcy;
-                        arr[off + 2] = arr[off + 5] = bcz;
+                        mesh.visible = false;
                     }
                 }
-                posAttr.needsUpdate = true;
-                morphGeo.computeBoundingSphere();
             }
 
         } else {
@@ -734,41 +785,45 @@ export default function Dodecahedron() {
             groupRef.current.quaternion.copy(tempQuat);
 
             // Set all edges to final positions
-            if (edgeLines) {
-                edgeLines.visible = true;
-                const posAttr = morphGeo.getAttribute('position') as THREE.BufferAttribute;
-                const arr = posAttr.array as Float32Array;
+            if (edgeLinesGroupRef.current) {
+                edgeLinesGroupRef.current.visible = true;
                 for (let i = 0; i < sortedEdges.length; i++) {
-                    const off = i * 6;
+                    const mesh = edgeCylindersRef.current[i];
+                    if (!mesh) continue;
                     const seg = sortedEdges[i];
-                    arr[off] = seg.ax;
-                    arr[off + 1] = seg.ay;
-                    arr[off + 2] = seg.az;
-                    arr[off + 3] = seg.bx;
-                    arr[off + 4] = seg.by;
-                    arr[off + 5] = seg.bz;
+                    v1.set(seg.ax, seg.ay, seg.az);
+                    v2.set(seg.bx, seg.by, seg.bz);
+                    updateCylinder(mesh, v1, v2);
                 }
-                posAttr.needsUpdate = true;
-                morphGeo.computeBoundingSphere();
             }
         }
     });
 
     return (
         <group ref={groupRef}>
-            {/* ── Flat pentagon, point-down (phase 1: tilts + moves to bottom face) ── */}
+            {/* ── Flat pentagon cylinders (phase 0-1) ── */}
             <group ref={pentGroupRef}>
-                <lineSegments>
-                    <primitive object={pentEdgesGeo} attach="geometry" />
-                    <lineBasicMaterial color="#000000" />
-                </lineSegments>
+                <mesh>
+                    <primitive object={pentGeo} attach="geometry" />
+                    <meshBasicMaterial color="rgb(255, 255, 255)" side={THREE.DoubleSide} />
+                </mesh>
+                {pentPoints.slice(0, 5).map((_, i) => (
+                    <mesh key={`pedge-${i}`} ref={(el) => { if (el) pentCylindersRef.current[i] = el; }}>
+                        <cylinderGeometry args={[LINE_THICKNESS, LINE_THICKNESS, 1, 6]} />
+                        <meshBasicMaterial color="#000000" />
+                    </mesh>
+                ))}
             </group>
 
-            {/* ── Morphing edges (phase 2: bottom-to-top construction) ── */}
-            <lineSegments ref={edgeLinesRef}>
-                <primitive object={morphGeo} attach="geometry" />
-                <lineBasicMaterial color="#000000" />
-            </lineSegments>
+            {/* ── Morphing edges cylinders (phase 2+) ── */}
+            <group ref={edgeLinesGroupRef}>
+                {sortedEdges.map((_, i) => (
+                    <mesh key={`edge-${i}`} ref={(el) => { if (el) edgeCylindersRef.current[i] = el; }}>
+                        <cylinderGeometry args={[LINE_THICKNESS, LINE_THICKNESS, 1, 6]} />
+                        <meshBasicMaterial color="#000000" />
+                    </mesh>
+                ))}
+            </group>
 
             {/* ── Face panels — positioned from aligned geometry ── */}
             {showPanels &&
