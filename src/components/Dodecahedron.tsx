@@ -3,6 +3,7 @@
 import { useRef, useMemo, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
+import Link from 'next/link';
 import * as THREE from "three";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -14,7 +15,7 @@ const ROTATE_SPEED = (2 * Math.PI) / 30; // 360° per 30s (slow tumble)
 const SPIN_PHASE = 2;     // pentagon spins in place
 const TILT_END = 4;       // pentagon tilts + moves to bottom face
 const EDGE_DRAW_END = 7;  // edges fully drawn
-const PANEL_DELAY_MS = (EDGE_DRAW_END + 1) * 1000;
+const PANEL_DELAY_MS = EDGE_DRAW_END * 1000;
 
 // ─── Helper: read triangle vertex from indexed or non-indexed geometry ───────
 function getTriVert(
@@ -123,35 +124,48 @@ const PENTAGON_CLIP =
 interface FaceData {
     direction: [number, number, number];
     label: string;
+    slug: string;
     accent: string;
-    content: React.ReactNode;
+    image: string;
+    description: string;
+    renderContent: (hoverHandlers: { onMouseEnter: () => void, onMouseLeave: () => void }) => React.ReactNode;
 }
 
 function FaceCard({
     accent,
+    slug,
     children,
     index = 0,
+    onMouseEnter,
+    onMouseLeave,
 }: {
     accent: string;
+    slug: string;
     children: React.ReactNode;
     index?: number;
+    onMouseEnter?: () => void;
+    onMouseLeave?: () => void;
 }) {
-    const delay = 8 + index * 0.3;
+    const delay = index * 0.15;
     return (
-        <div
-            className="animate-line flex flex-col items-center justify-center gap-1 p-4 text-center"
-            style={{
-                width: "160px",
-                height: "160px",
-                clipPath: PENTAGON_CLIP,
-                background: "rgba(255, 255, 255, 0.92)",
-                border: "1.5px solid rgba(0,0,0,0.15)",
-                boxShadow: `inset 0 0 0 1.5px ${accent}, 0 2px 8px rgba(0,0,0,0.08)`,
-                animationDelay: `${delay}s`,
-            }}
-        >
-            {children}
-        </div>
+        <Link href={`/projects/${slug}`}>
+            <div
+                onMouseEnter={onMouseEnter}
+                onMouseLeave={onMouseLeave}
+                className="animate-line flex flex-col items-center justify-center gap-2 p-5 text-center cursor-pointer transition-transform hover:scale-105"
+                style={{
+                    width: "230px",
+                    height: "230px",
+                    clipPath: PENTAGON_CLIP,
+                    background: "rgba(255, 255, 255, 1)",
+                    border: "1.5px solid rgba(0,0,0,0.15)",
+                    boxShadow: `inset 0 0 0 1.5px ${accent}, 0 2px 8px rgba(0,0,0,0.08)`,
+                    animationDelay: `${delay}s`,
+                }}
+            >
+                {children}
+            </div>
+        </Link>
     );
 }
 
@@ -159,9 +173,12 @@ const FACE_DEFINITIONS: FaceData[] = [
     {
         direction: [0, 1, phi],
         label: "Portrait",
+        slug: "portrait",
         accent: "rgba(6,182,212,0.6)",
-        content: (
-            <FaceCard accent="rgba(6,182,212,0.6)" index={0}>
+        image: "https://placehold.co/800x600/f4f4f5/52525b?text=Portrait",
+        description: "Simon Shenghua Jin. Robotics, ML, and Software Engineering. Passionate about building intelligent systems.",
+        renderContent: (handlers) => (
+            <FaceCard accent="rgba(6,182,212,0.6)" slug="portrait" index={0} {...handlers}>
                 <div className="h-10 w-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600" />
                 <h2 className="text-sm font-bold text-zinc-900">Simon Shenghua Jin</h2>
                 <p className="text-[9px] tracking-widest text-cyan-600 uppercase">
@@ -173,9 +190,12 @@ const FACE_DEFINITIONS: FaceData[] = [
     {
         direction: [0, -1, -phi],
         label: "Footer",
+        slug: "footer",
         accent: "rgba(120,120,120,0.4)",
-        content: (
-            <FaceCard accent="rgba(120,120,120,0.4)" index={1}>
+        image: "https://placehold.co/800x600/f4f4f5/52525b?text=Connect",
+        description: "Connect with me on LinkedIn and GitHub. Feel free to download my resume to see my full experience.",
+        renderContent: (handlers) => (
+            <FaceCard accent="rgba(120,120,120,0.4)" slug="footer" index={1} {...handlers}>
                 <p className="text-[9px] font-semibold tracking-widest text-zinc-500 uppercase">Connect</p>
                 <div className="flex gap-2">
                     <span className="rounded bg-zinc-200 px-2 py-1 text-[9px] text-zinc-700">LinkedIn</span>
@@ -188,9 +208,12 @@ const FACE_DEFINITIONS: FaceData[] = [
     {
         direction: [0, 1, -phi],
         label: "HardHaQ",
+        slug: "hardhaq",
         accent: "rgba(245,158,11,0.5)",
-        content: (
-            <FaceCard accent="rgba(245,158,11,0.5)" index={2}>
+        image: "https://placehold.co/800x600/fef3c7/b45309?text=HardHaQ",
+        description: "1st Place winner at HardHaQ 2026. Designed and built innovative solutions under tight deadlines in the Quantum Hardware Hackathon.",
+        renderContent: (handlers) => (
+            <FaceCard accent="rgba(245,158,11,0.5)" slug="hardhaq" index={2} {...handlers}>
                 <span className="text-[8px] font-bold tracking-widest text-amber-600 uppercase">🏆 1st Place</span>
                 <h3 className="text-xs font-bold text-zinc-900">HardHaQ 2026</h3>
                 <p className="text-[9px] text-zinc-500">Quantum Hardware Hackathon</p>
@@ -200,9 +223,12 @@ const FACE_DEFINITIONS: FaceData[] = [
     {
         direction: [0, -1, phi],
         label: "HackML",
+        slug: "hackml",
         accent: "rgba(139,92,246,0.5)",
-        content: (
-            <FaceCard accent="rgba(139,92,246,0.5)" index={3}>
+        image: "https://placehold.co/800x600/ede9fe/6d28d9?text=HackML",
+        description: "Developed advanced machine learning models with robust K-fold cross-validation techniques for optimal predictive performance.",
+        renderContent: (handlers) => (
+            <FaceCard accent="rgba(139,92,246,0.5)" slug="hackml" index={3} {...handlers}>
                 <span className="text-[8px] font-bold tracking-widest text-violet-600 uppercase">Machine Learning</span>
                 <h3 className="text-xs font-bold text-zinc-900">HackML</h3>
                 <p className="text-[9px] text-zinc-500">K-fold cross-validation</p>
@@ -212,9 +238,12 @@ const FACE_DEFINITIONS: FaceData[] = [
     {
         direction: [1, phi, 0],
         label: "Hardware",
+        slug: "hardware",
         accent: "rgba(16,185,129,0.5)",
-        content: (
-            <FaceCard accent="rgba(16,185,129,0.5)" index={4}>
+        image: "https://placehold.co/800x600/d1fae5/059669?text=Macropad",
+        description: "Engineered a custom hall-effect macropad from scratch, featuring a custom KiCad PCB and embedded firmware.",
+        renderContent: (handlers) => (
+            <FaceCard accent="rgba(16,185,129,0.5)" slug="hardware" index={4} {...handlers}>
                 <span className="text-[8px] font-bold tracking-widest text-emerald-600 uppercase">Hardware</span>
                 <h3 className="text-xs font-bold text-zinc-900">Custom Macropad</h3>
                 <p className="text-[9px] text-zinc-500">Hall-effect · KiCad PCB</p>
@@ -224,9 +253,12 @@ const FACE_DEFINITIONS: FaceData[] = [
     {
         direction: [-1, phi, 0],
         label: "Leadership",
+        slug: "leadership",
         accent: "rgba(244,63,94,0.5)",
-        content: (
-            <FaceCard accent="rgba(244,63,94,0.5)" index={5}>
+        image: "https://placehold.co/800x600/ffe4e6/e11d48?text=Leadership",
+        description: "Served as 3-year captain for FTC Parabellum. Led the team to compete in the European Internationals and mentored junior members.",
+        renderContent: (handlers) => (
+            <FaceCard accent="rgba(244,63,94,0.5)" slug="leadership" index={5} {...handlers}>
                 <span className="text-[8px] font-bold tracking-widest text-rose-600 uppercase">Leadership</span>
                 <h3 className="text-xs font-bold text-zinc-900">FTC Parabellum</h3>
                 <p className="text-[9px] text-zinc-500">3-Year Captain · EU Intl.</p>
@@ -236,9 +268,12 @@ const FACE_DEFINITIONS: FaceData[] = [
     {
         direction: [1, -phi, 0],
         label: "HUDson",
+        slug: "hudson",
         accent: "rgba(59,130,246,0.5)",
-        content: (
-            <FaceCard accent="rgba(59,130,246,0.5)" index={6}>
+        image: "https://placehold.co/800x600/dbeafe/2563eb?text=HUDson",
+        description: "Software project built at nwHacks. Integrated ElevenLabs API for advanced text-to-speech functionality in a head-up display system.",
+        renderContent: (handlers) => (
+            <FaceCard accent="rgba(59,130,246,0.5)" slug="hudson" index={6} {...handlers}>
                 <span className="text-[8px] font-bold tracking-widest text-blue-600 uppercase">Software</span>
                 <h3 className="text-xs font-bold text-zinc-900">HUDson</h3>
                 <p className="text-[9px] text-zinc-500">nwHacks · ElevenLabs API</p>
@@ -248,9 +283,12 @@ const FACE_DEFINITIONS: FaceData[] = [
     {
         direction: [-1, -phi, 0],
         label: "Air Mouse",
+        slug: "air-mouse",
         accent: "rgba(249,115,22,0.5)",
-        content: (
-            <FaceCard accent="rgba(249,115,22,0.5)" index={7}>
+        image: "https://placehold.co/800x600/ffedd5/ea580c?text=Air+Mouse",
+        description: "Created an intuitive air mouse device during JourneyHacks. Utilized sensor fusion with IMUs to translate physical gestures to stable cursor movements.",
+        renderContent: (handlers) => (
+            <FaceCard accent="rgba(249,115,22,0.5)" slug="air-mouse" index={7} {...handlers}>
                 <span className="text-[8px] font-bold tracking-widest text-orange-600 uppercase">Integration</span>
                 <h3 className="text-xs font-bold text-zinc-900">Air Mouse</h3>
                 <p className="text-[9px] text-zinc-500">JourneyHacks · IMU Fusion</p>
@@ -260,9 +298,12 @@ const FACE_DEFINITIONS: FaceData[] = [
     {
         direction: [phi, 0, 1],
         label: "Solder Bot",
+        slug: "solder-bot",
         accent: "rgba(20,184,166,0.5)",
-        content: (
-            <FaceCard accent="rgba(20,184,166,0.5)" index={8}>
+        image: "https://placehold.co/800x600/ccfbf1/0d9488?text=Solder+Bot",
+        description: "A teleoperated robotic arm specifically designed for precision soldering tasks, leveraging the Dum-E mechanical architecture.",
+        renderContent: (handlers) => (
+            <FaceCard accent="rgba(20,184,166,0.5)" slug="solder-bot" index={8} {...handlers}>
                 <span className="text-[8px] font-bold tracking-widest text-teal-600 uppercase">Mechatronics</span>
                 <h3 className="text-xs font-bold text-zinc-900">Solder Bot</h3>
                 <p className="text-[9px] text-zinc-500">Dum-E · Teleoperation</p>
@@ -272,9 +313,12 @@ const FACE_DEFINITIONS: FaceData[] = [
     {
         direction: [-phi, 0, 1],
         label: "Research",
+        slug: "research",
         accent: "rgba(99,102,241,0.5)",
-        content: (
-            <FaceCard accent="rgba(99,102,241,0.5)" index={9}>
+        image: "https://placehold.co/800x600/e0e7ff/4f46e5?text=Robotics+Lab",
+        description: "Conducting research at the Robotics Lab. Developing automated pipelines for OBJ to URDF conversion using ROS and Docker.",
+        renderContent: (handlers) => (
+            <FaceCard accent="rgba(99,102,241,0.5)" slug="research" index={9} {...handlers}>
                 <span className="text-[8px] font-bold tracking-widest text-indigo-600 uppercase">Research</span>
                 <h3 className="text-xs font-bold text-zinc-900">Robotics Lab</h3>
                 <p className="text-[9px] text-zinc-500">OBJ→URDF · ROS · Docker</p>
@@ -284,9 +328,12 @@ const FACE_DEFINITIONS: FaceData[] = [
     {
         direction: [phi, 0, -1],
         label: "Quant",
+        slug: "quant",
         accent: "rgba(234,179,8,0.5)",
-        content: (
-            <FaceCard accent="rgba(234,179,8,0.5)" index={10}>
+        image: "https://placehold.co/800x600/fef08a/ca8a04?text=Quant+Finance",
+        description: "Competed in the CPABC Competition focusing on quantitative finance. Implemented portfolio optimization models.",
+        renderContent: (handlers) => (
+            <FaceCard accent="rgba(234,179,8,0.5)" slug="quant" index={10} {...handlers}>
                 <span className="text-[8px] font-bold tracking-widest text-yellow-600 uppercase">Quant Finance</span>
                 <h3 className="text-xs font-bold text-zinc-900">CPABC Competition</h3>
                 <p className="text-[9px] text-zinc-500">Portfolio Optimization</p>
@@ -296,9 +343,12 @@ const FACE_DEFINITIONS: FaceData[] = [
     {
         direction: [-phi, 0, -1],
         label: "Awards",
+        slug: "awards",
         accent: "rgba(236,72,153,0.5)",
-        content: (
-            <FaceCard accent="rgba(236,72,153,0.5)" index={11}>
+        image: "https://placehold.co/800x600/fce7f3/db2777?text=Awards",
+        description: "Recipient of prestigious academic awards, including the Leduc and SFU Alumni scholarships. Expanding horizons in academics.",
+        renderContent: (handlers) => (
+            <FaceCard accent="rgba(236,72,153,0.5)" slug="awards" index={11} {...handlers}>
                 <span className="text-[8px] font-bold tracking-widest text-pink-600 uppercase">Awards</span>
                 <h3 className="text-xs font-bold text-zinc-900">Scholarships</h3>
                 <p className="text-[9px] text-zinc-500">Leduc · SFU Alumni</p>
@@ -306,6 +356,102 @@ const FACE_DEFINITIONS: FaceData[] = [
         ),
     },
 ];
+
+// ─── Popup Window Components ──────────────────────────────────────────────────
+function TerminalText({ text }: { text: string }) {
+    const [displayedText, setDisplayedText] = useState("");
+
+    useEffect(() => {
+        setDisplayedText("");
+        let i = 0;
+        const interval = setInterval(() => {
+            if (i < text.length) {
+                setDisplayedText(prev => prev + text[i]);
+                i++;
+            } else {
+                clearInterval(interval);
+            }
+        }, 30);
+        return () => clearInterval(interval);
+    }, [text]);
+
+    return <span>{displayedText}</span>;
+}
+
+function BlinkingImage({ src, alt }: { src: string, alt: string }) {
+    const [visible, setVisible] = useState(false);
+
+    useEffect(() => {
+        setVisible(false);
+        let count = 0;
+        const totalBlinks = 4;
+
+        const blinkInterval = setInterval(() => {
+            setVisible(v => !v);
+            count++;
+            if (count > totalBlinks * 2 - 1) {
+                clearInterval(blinkInterval);
+                setVisible(true);
+            }
+        }, 80);
+
+        return () => clearInterval(blinkInterval);
+    }, [src]);
+
+    return (
+        <img
+            src={src}
+            alt={alt}
+            className={`w-full h-full object-cover transition-opacity duration-75 ${visible ? "opacity-100" : "opacity-0"}`}
+        />
+    );
+}
+
+function ProjectDetailsWindow({ face }: { face: FaceData | null }) {
+    // Keep track of the last active face so the window elegantly fades out when closing 
+    // instead of instantly snapping to empty content.
+    const [activeFace, setActiveFace] = useState<FaceData | null>(null);
+    const [prevFace, setPrevFace] = useState<FaceData | null>(null);
+    const isVisible = face !== null;
+
+    if (face !== prevFace) {
+        setPrevFace(face);
+        if (face) setActiveFace(face);
+    }
+
+    if (!activeFace) return null;
+
+    return (
+        <div
+            className={`w-[400px] p-6 flex flex-col gap-5 z-50 pointer-events-none transition-all duration-300 ease-out`}
+            style={{
+                background: "rgba(255, 255, 255, 0.95)",
+                border: "1px solid rgba(0,0,0,0.15)",
+                boxShadow: `inset 0 0 0 2px ${activeFace.accent.replace(/[\d.]+\)$/g, '0.8)')}, 0 15px 50px rgba(0,0,0,0.2)`,
+                backdropFilter: "blur(16px)",
+                opacity: isVisible ? 1 : 0,
+                transform: isVisible ? "translateY(0) scale(1) perspective(800px) rotateY(-8deg)" : "translateY(15px) scale(0.95) perspective(800px) rotateY(-8deg)",
+                transformOrigin: "bottom right",
+                borderRadius: "2px",
+            }}
+        >
+            <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
+                <h3 className="font-bold text-xl text-zinc-900" style={{ color: activeFace.accent.replace(/[\d.]+\)$/g, '1)') }}>{activeFace.label}</h3>
+                <span className="text-xs font-mono text-zinc-400">~/{activeFace.slug}</span>
+            </div>
+
+            <div className="w-full aspect-video bg-zinc-100 overflow-hidden relative border border-zinc-200 shadow-inner rounded-sm">
+                <BlinkingImage src={activeFace.image} alt={activeFace.label} />
+            </div>
+
+            <div className="font-mono text-[13px] text-zinc-700 min-h-[85px] leading-relaxed bg-zinc-50/80 p-4 border border-zinc-200 shadow-inner overflow-hidden rounded-sm">
+                <span className="text-zinc-600 font-bold mr-2 select-none">&gt;</span>
+                <TerminalText text={activeFace.description} />
+                <span className="animate-pulse inline-block w-2 h-4 bg-zinc-400 ml-1.5 align-middle"></span>
+            </div>
+        </div>
+    );
+}
 
 // ─── Extract face centers & orientations from actual geometry ─────────────────
 interface ComputedFace {
@@ -382,11 +528,66 @@ function computeFaces(geo: THREE.DodecahedronGeometry | THREE.BufferGeometry, al
     });
 }
 
+function FacePanel({ face, onHoverFace }: { face: ComputedFace, onHoverFace: (face: FaceData | null) => void }) {
+    const groupRef = useRef<THREE.Group>(null);
+    const htmlRef = useRef<HTMLDivElement>(null);
+    // Use state instead of ref for visibility to avoid reading ref during render
+    const [isFacingFront, setIsFacingFront] = useState(true);
+
+    useFrame(({ camera }) => {
+        if (!groupRef.current || !htmlRef.current) return;
+        const worldPos = new THREE.Vector3();
+        groupRef.current.getWorldPosition(worldPos);
+
+        const worldNormal = new THREE.Vector3(0, 0, 1);
+        worldNormal.transformDirection(groupRef.current.matrixWorld);
+
+        const cameraDir = new THREE.Vector3().subVectors(camera.position, worldPos).normalize();
+
+        // If dot product > 0, the face normal is pointing roughly towards the camera
+        const isFacing = worldNormal.dot(cameraDir) > -0.05;
+
+        if (isFacingFront !== isFacing) {
+            setIsFacingFront(isFacing);
+            htmlRef.current.style.opacity = isFacing ? "1" : "0";
+            htmlRef.current.style.pointerEvents = isFacing ? "auto" : "none";
+            if (!isFacing) {
+                onHoverFace(null); // Force unhover if it rotates away while hovered
+            }
+        }
+    });
+
+    return (
+        <group ref={groupRef} position={face.position} quaternion={face.quaternion}>
+            <Html
+                transform
+                distanceFactor={6}
+                zIndexRange={[100, 0]}
+            >
+                <div ref={htmlRef} style={{ transition: 'opacity 0.4s ease-in-out', pointerEvents: 'auto' }}>
+                    {face.data.renderContent({
+                        onMouseEnter: () => { if (isFacingFront) onHoverFace(face.data); },
+                        onMouseLeave: () => { if (isFacingFront) onHoverFace(null); }
+                    })}
+                </div>
+            </Html>
+        </group>
+    );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function Dodecahedron() {
     const groupRef = useRef<THREE.Group>(null);
     const pentGroupRef = useRef<THREE.Group>(null);
     const edgeLinesRef = useRef<THREE.LineSegments>(null);
+
+    const [hoveredFace, setHoveredFace] = useState<FaceData | null>(null);
+    const hoveredFaceRef = useRef<FaceData | null>(null);
+
+    const onHoverFace = (face: FaceData | null) => {
+        setHoveredFace(face);
+        hoveredFaceRef.current = face;
+    };
 
     // Pre-rotated dodecahedron with one face at -Y
     const { geo: alignedGeo, alignQ, bottomCenter } = useMemo(() => createAlignedDodecGeo(), []);
@@ -427,7 +628,10 @@ export default function Dodecahedron() {
     const axisY = useMemo(() => new THREE.Vector3(0, 1, 0), []);
     const axisZ = useMemo(() => new THREE.Vector3(0, 0, 1), []); // Z axis for flat spin
 
-    useFrame(({ clock }) => {
+    const speedRef = useRef(ROTATE_SPEED);
+    const tumbleAngleRef = useRef(0);
+
+    useFrame(({ clock }, delta) => {
         if (!groupRef.current) return;
         const elapsed = clock.getElapsedTime();
 
@@ -515,7 +719,14 @@ export default function Dodecahedron() {
             if (pent) pent.visible = false;
 
             // Slow tumble starting FROM the tilt orientation
-            const tumbleT = (elapsed - EDGE_DRAW_END) * ROTATE_SPEED;
+            const isHovered = hoveredFaceRef.current !== null;
+            const targetSpeed = isHovered ? ROTATE_SPEED * 0.15 : ROTATE_SPEED;
+            // Frame-independent lerp for smooth transition
+            speedRef.current = THREE.MathUtils.lerp(speedRef.current, targetSpeed, 5 * delta);
+
+            tumbleAngleRef.current += speedRef.current * delta;
+
+            const tumbleT = tumbleAngleRef.current;
             qx.setFromAxisAngle(axisX, tumbleT);
             qy.setFromAxisAngle(axisY, -tumbleT);
             tumbleQuat.copy(qx).multiply(qy);
@@ -562,21 +773,19 @@ export default function Dodecahedron() {
             {/* ── Face panels — positioned from aligned geometry ── */}
             {showPanels &&
                 faces.map((face, i) => (
-                    <group
-                        key={`face-${i}`}
-                        position={face.position}
-                        quaternion={face.quaternion}
-                    >
-                        <Html
-                            transform
-                            distanceFactor={6}
-                            zIndexRange={[100, 0]}
-                            style={{ pointerEvents: "auto", userSelect: "none" }}
-                        >
-                            {face.data.content}
-                        </Html>
-                    </group>
+                    <FacePanel key={`face-${i}`} face={face} onHoverFace={onHoverFace} />
                 ))}
+
+            {/* ── 2D Overlay Window (Shown on hover) ── */}
+            {showPanels && (
+                <Html center zIndexRange={[200, 100]}>
+                    <div className="pointer-events-none w-[100vw] h-[100vh] flex items-center justify-end relative z-50">
+                        <div className="mr-[5vw] mb-12">
+                            <ProjectDetailsWindow face={hoveredFace} />
+                        </div>
+                    </div>
+                </Html>
+            )}
         </group>
     );
 }
