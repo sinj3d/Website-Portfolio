@@ -139,7 +139,7 @@ interface FaceData {
     label: string;
     slug: string;
     accent: string;
-    image: string;
+    image?: string;
     description: string;
     renderContent: (hoverHandlers: { onMouseEnter: () => void, onMouseLeave: () => void }) => React.ReactNode;
 }
@@ -188,14 +188,14 @@ const FACE_DEFINITIONS: FaceData[] = [
         label: "Portrait",
         slug: "portrait",
         accent: "rgba(6,182,212,0.6)",
-        image: "https://placehold.co/800x600/f4f4f5/52525b?text=Portrait",
-        description: "Simon Shenghua Jin. Robotics, ML, and Software Engineering. Passionate about building intelligent systems.",
+        image: "/images/portrait/portrait.jpg",
+        description: "Simon Jin. Robotics, ML, and Software Engineering. Passionate about building intelligent systems.",
         renderContent: (handlers) => (
             <FaceCard accent="rgba(6,182,212,0.6)" slug="portrait" index={0} {...handlers}>
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600" />
+                <img src="/images/portrait/SJ.png" alt="Portrait" className="w-15 h-15 " />
                 <h2 className="text-sm font-bold text-zinc-900">Simon Shenghua Jin</h2>
                 <p className="text-[9px] tracking-widest text-cyan-600 uppercase">
-                    Robotics | ML | Software
+                    Robotics | ML | 3D Design
                 </p>
             </FaceCard>
         ),
@@ -205,15 +205,14 @@ const FACE_DEFINITIONS: FaceData[] = [
         label: "Footer",
         slug: "footer",
         accent: "rgba(120,120,120,0.4)",
-        image: "https://placehold.co/800x600/f4f4f5/52525b?text=Connect",
-        description: "Connect with me on LinkedIn and GitHub. Feel free to download my resume to see my full experience.",
+        description: "Connect with me on LinkedIn and GitHub, or download my resume to see my full experience.",
         renderContent: (handlers) => (
             <FaceCard accent="rgba(120,120,120,0.4)" slug="footer" index={1} {...handlers}>
-                <p className="text-[9px] font-semibold tracking-widest text-zinc-500 uppercase">Connect</p>
-                <div className="flex gap-2">
-                    <span className="rounded bg-zinc-200 px-2 py-1 text-[9px] text-zinc-700">LinkedIn</span>
-                    <span className="rounded bg-zinc-200 px-2 py-1 text-[9px] text-zinc-700">GitHub</span>
-                    <span className="rounded bg-cyan-100 px-2 py-1 text-[9px] text-cyan-700">Resume</span>
+                <h3 className="text-sm font-bold tracking-widest text-zinc-600 uppercase mb-2">Connect</h3>
+                <div className="flex gap-4">
+                    <img src="/images/footer/linkedin.svg" alt="Linkedin" className="w-7 h-7 hover:scale-110 transition-transform cursor-pointer" />
+                    <img src="/images/footer/github.svg" alt="Github" className="w-7 h-7 hover:scale-110 transition-transform cursor-pointer" />
+                    <img src="/images/footer/resume.svg" alt="Resume" className="w-7 h-7 hover:scale-110 transition-transform cursor-pointer" />
                 </div>
             </FaceCard>
         ),
@@ -223,12 +222,13 @@ const FACE_DEFINITIONS: FaceData[] = [
         label: "HardHaQ",
         slug: "hardhaq",
         accent: "rgba(245,158,11,0.5)",
-        image: "https://placehold.co/800x600/fef3c7/b45309?text=HardHaQ",
-        description: "1st Place winner at HardHaQ 2026. Designed and built innovative solutions under tight deadlines in the Quantum Hardware Hackathon.",
+        image: "/images/hardhaq/circuit.png",
+        description: "1st Place winner at HardHaQ 2025, a quantum hardware hackathon hosted by the North American Quantum Consortium. ",
         renderContent: (handlers) => (
             <FaceCard accent="rgba(245,158,11,0.5)" slug="hardhaq" index={2} {...handlers}>
+                <img src="/images/hardhaq/nasc.png" alt="HardHaQ" className="w-15 h-15 rounded-full" />
                 <span className="text-[8px] font-bold tracking-widest text-amber-600 uppercase">🏆 1st Place</span>
-                <h3 className="text-xs font-bold text-zinc-900">HardHaQ 2026</h3>
+                <h3 className="text-xs font-bold text-zinc-900">HardHaQ 2025</h3>
                 <p className="text-[9px] text-zinc-500">Quantum Hardware Hackathon</p>
             </FaceCard>
         ),
@@ -244,19 +244,19 @@ const FACE_DEFINITIONS: FaceData[] = [
             <FaceCard accent="rgba(139,92,246,0.5)" slug="hackml" index={3} {...handlers}>
                 <span className="text-[8px] font-bold tracking-widest text-violet-600 uppercase">Machine Learning</span>
                 <h3 className="text-xs font-bold text-zinc-900">HackML</h3>
-                <p className="text-[9px] text-zinc-500">K-fold cross-validation</p>
+                <p className="text-[9px] text-zinc-500">New Grade Study</p>
             </FaceCard>
         ),
     },
     {
         direction: [1, phi, 0],
-        label: "Hardware",
-        slug: "hardware",
+        label: "Macropad",
+        slug: "macropad",
         accent: "rgba(16,185,129,0.5)",
         image: "https://placehold.co/800x600/d1fae5/059669?text=Macropad",
         description: "Engineered a custom hall-effect macropad from scratch, featuring a custom KiCad PCB and embedded firmware.",
         renderContent: (handlers) => (
-            <FaceCard accent="rgba(16,185,129,0.5)" slug="hardware" index={4} {...handlers}>
+            <FaceCard accent="rgba(16,185,129,0.5)" slug="macropad" index={4} {...handlers}>
                 <span className="text-[8px] font-bold tracking-widest text-emerald-600 uppercase">Hardware</span>
                 <h3 className="text-xs font-bold text-zinc-900">Custom Macropad</h3>
                 <p className="text-[9px] text-zinc-500">Hall-effect · KiCad PCB</p>
@@ -453,9 +453,11 @@ function ProjectDetailsWindow({ face }: { face: FaceData | null }) {
                 <span className="text-xs font-mono text-zinc-400">~/{activeFace.slug}</span>
             </div>
 
-            <div className="w-full aspect-video bg-zinc-100 overflow-hidden relative border border-zinc-200 shadow-inner rounded-sm">
-                <BlinkingImage src={activeFace.image} alt={activeFace.label} />
-            </div>
+            {activeFace.image && (
+                <div className="w-full aspect-video bg-zinc-100 overflow-hidden relative border border-zinc-200 shadow-inner rounded-sm">
+                    <BlinkingImage src={activeFace.image} alt={activeFace.label} />
+                </div>
+            )}
 
             <div className="font-mono text-[13px] text-zinc-700 min-h-[85px] leading-relaxed bg-zinc-50/80 p-4 border border-zinc-200 shadow-inner overflow-hidden rounded-sm">
                 <span className="text-zinc-600 font-bold mr-2 select-none">&gt;</span>
