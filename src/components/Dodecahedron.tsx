@@ -220,8 +220,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         renderContent: (handlers) => (
             <FaceCard accent="rgba(6,182,212,0.6)" slug="portrait" index={0} {...handlers}>
                 <img src="/images/portrait/SJ.png" alt="Portrait" className="w-15 h-15 " />
-                <h2 className="text-sm font-bold text-zinc-900">Simon Shenghua Jin</h2>
-                <p className="text-[9px] tracking-widest text-cyan-600 uppercase">
+                <h2 className="text-sm font-bold text-zinc-800">Simon Shenghua Jin</h2>
+                <p className="text-[9px] tracking-widest text-cyan-500 uppercase">
                     Robotics | ML | 3D Design
                 </p>
             </FaceCard>
@@ -419,40 +419,12 @@ function TerminalText({ text }: { text: string }) {
     return <span>{displayedText}</span>;
 }
 
-function BlinkingImage({ src, alt }: { src: string, alt: string }) {
-    const [visible, setVisible] = useState(false);
-
-    useEffect(() => {
-        setVisible(false);
-        let count = 0;
-        const totalBlinks = 4;
-
-        const blinkInterval = setInterval(() => {
-            setVisible(v => !v);
-            count++;
-            if (count > totalBlinks * 2 - 1) {
-                clearInterval(blinkInterval);
-                setVisible(true);
-            }
-        }, 80);
-
-        return () => clearInterval(blinkInterval);
-    }, [src]);
-
-    return (
-        <img
-            src={src}
-            alt={alt}
-            className={`w-full h-full object-cover transition-opacity duration-75 ${visible ? "opacity-100" : "opacity-0"}`}
-        />
-    );
-}
-
 function ProjectDetailsWindow({ face }: { face: FaceData | null }) {
     // Keep track of the last active face so the window elegantly fades out when closing 
     // instead of instantly snapping to empty content.
     const [activeFace, setActiveFace] = useState<FaceData | null>(null);
     const [prevFace, setPrevFace] = useState<FaceData | null>(null);
+
     const isVisible = face !== null;
 
     if (face !== prevFace) {
@@ -462,6 +434,10 @@ function ProjectDetailsWindow({ face }: { face: FaceData | null }) {
 
     if (!activeFace) return null;
 
+    // The entire window's opacity is controlled by both its general visibility (is hovering?) 
+    // AND the rapid blinking state effect.
+    const finalOpacity = isVisible ? 1 : 0;
+
     return (
         <div
             className={`w-[400px] p-6 flex flex-col gap-5 z-50 pointer-events-none transition-all duration-300 ease-out`}
@@ -470,7 +446,7 @@ function ProjectDetailsWindow({ face }: { face: FaceData | null }) {
                 border: "1px solid rgba(0,0,0,0.15)",
                 boxShadow: `inset 0 0 0 2px ${activeFace.accent.replace(/[\d.]+\)$/g, '0.8)')}, 0 15px 50px rgba(0,0,0,0.2)`,
                 backdropFilter: "blur(16px)",
-                opacity: isVisible ? 1 : 0,
+                opacity: finalOpacity,
                 transform: isVisible ? "translateY(0) scale(1) perspective(800px) rotateY(-8deg)" : "translateY(15px) scale(0.95) perspective(800px) rotateY(-8deg)",
                 transformOrigin: "bottom right",
                 borderRadius: "2px",
@@ -483,7 +459,7 @@ function ProjectDetailsWindow({ face }: { face: FaceData | null }) {
 
             {activeFace.image && (
                 <div className="w-full aspect-video bg-zinc-100 overflow-hidden relative border border-zinc-200 shadow-inner rounded-sm">
-                    <BlinkingImage src={activeFace.image} alt={activeFace.label} />
+                    <img src={activeFace.image} alt={activeFace.label} className="w-full h-full object-cover" />
                 </div>
             )}
 
