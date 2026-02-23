@@ -160,23 +160,50 @@ function FaceCard({
     onMouseLeave?: () => void;
 }) {
     const delay = index * 0.15;
+
+    // Points corresponding exactly to PENTAGON_CLIP
+    // (50% 0%, 97.55% 34.55%, 79.39% 90.45%, 20.61% 90.45%, 2.45% 34.55%)
+    // scaled by 205 (width/height of FaceCard)
+    const points = "102.5,0 199.9775,70.8275 162.7495,185.4225 42.2505,185.4225 5.0225,70.8275";
+
     return (
         <Link href={`/projects/${slug}`}>
             <div
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
-                className="animate-line flex flex-col items-center justify-center gap-2 p-5 text-center cursor-pointer transition-transform hover:scale-105"
+                className="animate-line relative cursor-pointer transition-transform hover:scale-105 block"
                 style={{
                     width: "205px",
                     height: "205px",
                     clipPath: PENTAGON_CLIP,
-                    background: "rgba(255, 255, 255, 1)",
-                    border: "1.5px solid rgba(0,0,0,0.15)",
-                    boxShadow: `inset 0 0 0 1.5px ${accent}, 0 2px 8px rgba(0,0,0,0.08)`,
                     animationDelay: `${delay}s`,
                 }}
             >
-                {children}
+                {/* Background & Border SVG mimicking CSS inset borders */}
+                <svg
+                    className="absolute inset-0 w-full h-full pointer-events-none z-0"
+                    viewBox="0 0 205 205"
+                >
+                    {/* Background white fill + 4px inner accent border (strokeWidth 8 clips 4px off) */}
+                    <polygon
+                        points={points}
+                        fill="rgba(255, 255, 255, 1)"
+                        stroke={accent}
+                        strokeWidth="8"
+                    />
+                    {/* 2px inner gray border (strokeWidth 4 clips 2px off), overlays the accent */}
+                    <polygon
+                        points={points}
+                        fill="none"
+                        stroke="rgba(0,0,0,0.15)"
+                        strokeWidth="4"
+                    />
+                </svg>
+
+                {/* Content Container (z-index ensures it sits above the background SVG) */}
+                <div className="relative z-10 flex flex-col items-center justify-center w-full h-full gap-2 p-5 text-center">
+                    {children}
+                </div>
             </div>
         </Link>
     );
@@ -265,14 +292,15 @@ const FACE_DEFINITIONS: FaceData[] = [
     },
     {
         direction: [-1, phi, 0],
-        label: "Leadership",
-        slug: "leadership",
+        label: "Parabellum",
+        slug: "parabellum",
         accent: "rgba(244,63,94,0.5)",
-        image: "https://placehold.co/800x600/ffe4e6/e11d48?text=Leadership",
+        image: "https://placehold.co/800x600/ffe4e6/e11d48?text=Parabellum",
         description: "Served as 3-year captain for FTC Parabellum. Led the team to compete in the European Internationals and mentored junior members.",
         renderContent: (handlers) => (
-            <FaceCard accent="rgba(244,63,94,0.5)" slug="leadership" index={5} {...handlers}>
-                <span className="text-[8px] font-bold tracking-widest text-rose-600 uppercase">Leadership</span>
+            <FaceCard accent="rgba(244,63,94,0.5)" slug="parabellum" index={5} {...handlers}>
+                <img src="/images/parabellum/logo.svg" alt="Parabellum Logo" className="w-20 h-20" />
+                <span className="text-[8px] font-bold tracking-widest text-rose-600 uppercase">Parabellum</span>
                 <h3 className="text-xs font-bold text-zinc-900">FTC Parabellum</h3>
                 <p className="text-[9px] text-zinc-500">3-Year Captain · EU Intl.</p>
             </FaceCard>
