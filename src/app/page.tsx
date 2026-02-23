@@ -127,21 +127,23 @@ export default function Home() {
       </div>
 
       {/* 3D Canvas */}
-      <Canvas
-        camera={{ position: [0, 0, 8], fov: 50 }}
-        style={{ background: "#ffffff" }}
-      >
-        <ambientLight intensity={0.8} />
-        <pointLight position={[10, 10, 10]} intensity={0.6} />
-        <Dodecahedron />
-        <OrbitControls
-          enableZoom={false}
-          enablePan={false}
-          enableDamping
-          dampingFactor={0.08}
-          target={[0, 0, 0]}
-        />
-      </Canvas>
+      <div className="absolute inset-0 z-0 pointer-events-auto">
+        <Canvas
+          camera={{ position: [0, 0, 8], fov: 50 }}
+          style={{ background: "#ffffff", pointerEvents: "auto" }}
+        >
+          <ambientLight intensity={0.8} />
+          <pointLight position={[10, 10, 10]} intensity={0.6} />
+          <Dodecahedron />
+          <OrbitControls
+            enableZoom={false}
+            enablePan={false}
+            enableDamping
+            dampingFactor={0.08}
+            target={[0, 0, 0]}
+          />
+        </Canvas>
+      </div>
     </main>
   );
 }

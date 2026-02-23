@@ -598,7 +598,8 @@ function FacePanel({ face, onHoverFace }: { face: ComputedFace, onHoverFace: (fa
                 transform
                 center
                 distanceFactor={6}
-                zIndexRange={[100, 0]}
+                zIndexRange={[1000, 0]}
+                wrapperClass="z-50"
             >
                 <div ref={htmlRef} style={{ transition: 'opacity 0.4s ease-in-out', pointerEvents: 'auto' }}>
                     {face.data.renderContent({
