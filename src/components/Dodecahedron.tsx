@@ -280,10 +280,11 @@ const FACE_DEFINITIONS: FaceData[] = [
         label: "Macropad",
         slug: "macropad",
         accent: "rgba(16,185,129,0.5)",
-        image: "https://placehold.co/800x600/d1fae5/059669?text=Macropad",
+        image: "/images/macropad/switch.png",
         description: "Engineered a custom hall-effect macropad from scratch, featuring a custom KiCad PCB and embedded firmware.",
         renderContent: (handlers) => (
             <FaceCard accent="rgba(16,185,129,0.5)" slug="macropad" index={4} {...handlers}>
+                <img src="/images/macropad/macropad.png" style={{ width: '100%', height: '75px', objectFit: 'contain' }} />
                 <span className="text-[8px] font-bold tracking-widest text-emerald-600 uppercase">Hardware</span>
                 <h3 className="text-xs font-bold text-zinc-900">Custom Macropad</h3>
                 <p className="text-[9px] text-zinc-500">Hall-effect · KiCad PCB</p>
@@ -338,16 +339,17 @@ const FACE_DEFINITIONS: FaceData[] = [
     },
     {
         direction: [phi, 0, 1],
-        label: "Solder Bot",
-        slug: "solder-bot",
+        label: "Telebuddy (Solder Bot)",
+        slug: "telebuddy",
         accent: "rgba(20,184,166,0.5)",
-        image: "https://placehold.co/800x600/ccfbf1/0d9488?text=Solder+Bot",
-        description: "A teleoperated robotic arm specifically designed for precision soldering tasks, leveraging the Dum-E mechanical architecture.",
+        image: "/images/telebuddy/telebuddy.jpg",
+        description: "A 6-DOF teleoperated robotic arm specifically designed for precision soldering tasks. Won Science Tech for Social Good at Hack the Coast.",
         renderContent: (handlers) => (
-            <FaceCard accent="rgba(20,184,166,0.5)" slug="solder-bot" index={8} {...handlers}>
+            <FaceCard accent="rgba(20,184,166,0.5)" slug="telebuddy" index={8} {...handlers}>
+                <img src="/images/telebuddy/hackthecoast.png" alt="Telebuddy" className="w-10 h-10" />
                 <span className="text-[8px] font-bold tracking-widest text-teal-600 uppercase">Mechatronics</span>
-                <h3 className="text-xs font-bold text-zinc-900">Solder Bot</h3>
-                <p className="text-[9px] text-zinc-500">Dum-E · Teleoperation</p>
+                <h3 className="text-xs font-bold text-zinc-900">Telebuddy</h3>
+                <p className="text-[9px] text-zinc-500">AR and Teleoperation</p>
             </FaceCard>
         ),
     },
