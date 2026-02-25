@@ -1,6 +1,6 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-This is my portfolio website. I created it to showcase my skills and projects. It is still under active development. Some features are broken or missing. You can see the progress here: https://website-portfolio-peach-nine.vercel.app/
+This is my portfolio website. I created it to showcase my skills and projects. It is still under active development. Some features are broken or missing. You can see the progress here: [simonjin.ca](https://www.simonjin.ca)
 
 ## Getting Started
 
