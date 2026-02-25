@@ -295,11 +295,11 @@ const FACE_DEFINITIONS: FaceData[] = [
         direction: [-1, phi, 0],
         label: "Parabellum",
         slug: "parabellum",
-        accent: "rgba(244,63,94,0.5)",
-        image: "https://placehold.co/800x600/ffe4e6/e11d48?text=Parabellum",
+        accent: "rgba(96, 34, 44, 0.5)",
+        image: "/images/parabellum/booth.jpg",
         description: "Served as 3-year captain for FTC Parabellum. Led the team to compete in the European Internationals and mentored junior members.",
         renderContent: (handlers) => (
-            <FaceCard accent="rgba(244,63,94,0.5)" slug="parabellum" index={5} {...handlers}>
+            <FaceCard accent="rgba(96, 34, 44, 0.5)" slug="parabellum" index={5} {...handlers}>
                 <img src="/images/parabellum/logo.svg" alt="Parabellum Logo" className="w-20 h-20" />
                 <span className="text-[8px] font-bold tracking-widest text-rose-600 uppercase">Parabellum</span>
                 <h3 className="text-xs font-bold text-zinc-900">FTC Parabellum</h3>
@@ -312,10 +312,11 @@ const FACE_DEFINITIONS: FaceData[] = [
         label: "HUDson",
         slug: "hudson",
         accent: "rgba(59,130,246,0.5)",
-        image: "https://placehold.co/800x600/dbeafe/2563eb?text=HUDson",
+        image: "/images/hudson/gallery.jpg",
         description: "Software project built at nwHacks. Integrated ElevenLabs API for advanced text-to-speech functionality in a head-up display system.",
         renderContent: (handlers) => (
             <FaceCard accent="rgba(59,130,246,0.5)" slug="hudson" index={6} {...handlers}>
+                <img src="/images/hudson/logo.jpg" alt="HUDson" className="w-15 h-15" />
                 <span className="text-[8px] font-bold tracking-widest text-blue-600 uppercase">Software</span>
                 <h3 className="text-xs font-bold text-zinc-900">HUDson</h3>
                 <p className="text-[9px] text-zinc-500">nwHacks · ElevenLabs API</p>
