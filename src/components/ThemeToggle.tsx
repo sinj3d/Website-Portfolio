@@ -11,15 +11,13 @@ export default function ThemeToggle() {
     setMounted(true);
   }, []);
 
-  const isDark = theme === "dark";
-
-  if (!mounted) return null;
+  const isDark = mounted ? theme === "dark" : true; // Default to dark state during SSR
 
   return (
     <button
       id="theme-toggle"
-      onClick={toggleTheme}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      onClick={mounted ? toggleTheme : undefined}
+      aria-label="Toggle dark mode"
       className="fixed top-5 right-5 z-[300] flex items-center justify-center w-10 h-10 rounded-full
         border border-zinc-300 dark:border-zinc-600
         bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md
@@ -27,7 +25,7 @@ export default function ThemeToggle() {
         shadow-lg hover:scale-110
         transition-all duration-300 cursor-pointer"
     >
-      <div className="relative w-5 h-5">
+      <div className={`relative w-5 h-5 transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
         {/* Sun icon */}
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -38,7 +36,9 @@ export default function ThemeToggle() {
           strokeLinecap="round"
           strokeLinejoin="round"
           className={`absolute inset-0 w-5 h-5 transition-all duration-300 ${
-            isDark ? "opacity-100 rotate-0 scale-100" : "opacity-0 rotate-90 scale-0"
+            mounted
+              ? (isDark ? "opacity-100 rotate-0 scale-100" : "opacity-0 rotate-90 scale-0")
+              : "opacity-100 rotate-0 scale-100"
           }`}
         >
           <circle cx="12" cy="12" r="5" />
@@ -61,7 +61,9 @@ export default function ThemeToggle() {
           strokeLinecap="round"
           strokeLinejoin="round"
           className={`absolute inset-0 w-5 h-5 transition-all duration-300 ${
-            isDark ? "opacity-0 -rotate-90 scale-0" : "opacity-100 rotate-0 scale-100"
+            mounted
+              ? (isDark ? "opacity-0 -rotate-90 scale-0" : "opacity-100 rotate-0 scale-100")
+              : "opacity-0 -rotate-90 scale-0"
           }`}
         >
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
