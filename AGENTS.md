@@ -25,3 +25,11 @@ When generating placeholder data, scaffolding UI cards, or writing descriptions,
 - **Machine Learning & Quant:** Use correct terminology for model optimization, K-fold cross-validation (HackML), and quantitative financial analysis. 
 - **Low-Level Systems:** Accurately represent C++, Python, ROS architectures, Docker containerization, and API integrations (HUDson, Air Mouse).
 - **Achievements:** Format hackathon wins (HardHaQ 1st Place, nwHacks, JourneyHacks), leadership roles (FTC Team Parabellum Captain), and academic recognition (Matthew Leduc Scholarship, SFU Alumni Scholarship) with professional prominence.
+
+# 5. Global Design Schema & UI Specs
+- **Theme:** Strict Dark Mode first. Backgrounds should use `bg-zinc-950` or `#0a0a0a` for canvas bases.
+- **Animations:** ALWAYS use `framer-motion` for DOM page transitions (fade-in, slide-up). Do not use pure CSS keyframes unless absolutely necessary for performance.
+- **3D Components:** Every page routes must include a scoped `<Canvas>` element. Use `@react-three/drei`'s `<Float>` or `<PresentationControls>` to make 3D elements feel alive but constrained. 
+- **Materials:** R3F geometries should lean towards stylized textures—use `MeshPhysicalMaterial` with high roughness, transmission (glass effects), and glowing emissive accents rather than photorealistic textures.
+- **UI Paradigm:** Use Tailwind Glassmorphism (e.g., `bg-white/5 backdrop-blur-md border border-white/10`) for all UI cards floating over 3D canvases.
+- **Typography:** Use the Geist Mono font for technical data/code snippets, and Geist Sans for headings and readable UI.

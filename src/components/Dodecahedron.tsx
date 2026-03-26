@@ -255,7 +255,11 @@ const FACE_DEFINITIONS: FaceData[] = [
         description: "Simon Jin. Robotics, ML, and Software Engineering. Passionate about building intelligent systems.",
         renderContent: (handlers, isDark) => (
             <FaceCard accent="rgba(6,182,212,0.6)" slug="portrait" index={0} isDark={isDark} {...handlers}>
-                <img src="/images/portrait/SJ.png" alt="Portrait" className="w-15 h-15 " />
+                <div className="relative w-16 h-16 group mb-1">
+                    <img src="/images/portrait/SJ.png" alt="Portrait" className="absolute inset-0 w-full h-full object-contain" />
+                    <img src="/images/portrait/SJ.png" alt="Portrait" className="absolute inset-0 w-full h-full object-contain opacity-0 group-hover:opacity-70 group-hover:translate-x-[2px] group-hover:-translate-y-[1px] transition-all duration-100 mix-blend-screen" style={{ filter: 'hue-rotate(90deg) saturate(200%) blur(0.5px)' }} />
+                    <img src="/images/portrait/SJ.png" alt="Portrait" className="absolute inset-0 w-full h-full object-contain opacity-0 group-hover:opacity-70 group-hover:-translate-x-[2px] group-hover:translate-y-[1px] transition-all duration-100 mix-blend-screen" style={{ filter: 'hue-rotate(-90deg) saturate(200%) blur(0.5px)' }} />
+                </div>
                 <h2 className="text-sm font-bold text-zinc-800 dark:text-zinc-200">Simon Jin</h2>
                 <p className="text-[9px] tracking-widest text-cyan-500 uppercase">
                     Robotics | ML | 3D Design
@@ -263,21 +267,17 @@ const FACE_DEFINITIONS: FaceData[] = [
             </FaceCard>
         ),
     },
-    // ── 1: Footer ────────────────────────────────────────────────────────────
+    // ── 1: Frosted placeholder (was footer) ──────────────────────────────────
     {
         direction: [0, -1, -phi],
-        label: "Footer",
-        slug: "footer",
-        accent: "rgba(120,120,120,0.4)",
-        description: "Connect with me on LinkedIn and GitHub, or download my resume to see my full experience.",
+        label: "",
+        slug: "placeholder-5",
+        accent: "rgba(160,160,180,0.3)",
+        description: "This project is currently under development. Check back soon for updates.",
+        isFrosted: true,
         renderContent: (handlers, isDark) => (
-            <FaceCard accent="rgba(120,120,120,0.4)" slug="footer" index={1} isDark={isDark} {...handlers}>
-                <h3 className="text-sm font-bold tracking-widest text-zinc-600 dark:text-zinc-400 uppercase mb-2">Connect</h3>
-                <div className="flex gap-4">
-                    <img src="/images/footer/linkedin.svg" alt="Linkedin" className="w-7 h-7 hover:scale-110 transition-transform cursor-pointer dark:invert" />
-                    <img src="/images/footer/github.svg" alt="Github" className="w-7 h-7 hover:scale-110 transition-transform cursor-pointer dark:invert" />
-                    <img src="/images/footer/resume.svg" alt="Resume" className="w-7 h-7 hover:scale-110 transition-transform cursor-pointer dark:invert" />
-                </div>
+            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-5" index={1} frosted isDark={isDark} {...handlers}>
+                <div className="animate-shimmer absolute inset-0 pointer-events-none" />
             </FaceCard>
         ),
     },
