@@ -12,7 +12,6 @@ import { useState, useEffect, useRef } from "react";
 const TERMINAL_LINES = [
   { text: "> portfolio", style: "text-cyan-600 text-xs tracking-widest uppercase" },
   { text: "", style: "h-2" }, // spacer
-  { text: "Simon", style: "text-3xl font-bold text-zinc-900" },
   { text: "Shenghua Jin", style: "text-3xl font-bold text-zinc-900" },
   { text: "", style: "h-3" }, // spacer
   { text: "Mechatronics engineer and software", style: "text-sm text-zinc-600" },
@@ -102,6 +101,12 @@ function TerminalText() {
             className="rounded border border-zinc-300 px-4 py-1.5 text-xs text-zinc-700 transition hover:bg-zinc-100"
           >
             view_projects
+          </a>
+          <a
+            href="/resume"
+            className="rounded border border-zinc-300 px-4 py-1.5 text-xs text-zinc-700 transition hover:bg-zinc-100"
+          >
+            view_resume
           </a>
           <a
             href="#"

@@ -141,6 +141,7 @@ interface FaceData {
     accent: string;
     image?: string;
     description: string;
+    isFrosted?: boolean;
     renderContent: (hoverHandlers: { onMouseEnter: () => void, onMouseLeave: () => void }) => React.ReactNode;
 }
 
@@ -149,6 +150,7 @@ function FaceCard({
     slug,
     children,
     index = 0,
+    frosted = false,
     onMouseEnter,
     onMouseLeave,
 }: {
@@ -156,6 +158,7 @@ function FaceCard({
     slug: string;
     children: React.ReactNode;
     index?: number;
+    frosted?: boolean;
     onMouseEnter?: () => void;
     onMouseLeave?: () => void;
 }) {
@@ -166,50 +169,73 @@ function FaceCard({
     // scaled by 205 (width/height of FaceCard)
     const points = "102.5,0 199.9775,70.8275 162.7495,185.4225 42.2505,185.4225 5.0225,70.8275";
 
+    const wrapper = (
+        <div
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            className="animate-line relative cursor-pointer transition-transform hover:scale-105 block"
+            style={{
+                width: "205px",
+                height: "205px",
+                clipPath: PENTAGON_CLIP,
+                animationDelay: `${delay}s`,
+            }}
+        >
+            {/* Background & Border SVG mimicking CSS inset borders */}
+            <svg
+                className="absolute inset-0 w-full h-full pointer-events-none z-0"
+                viewBox="0 0 205 205"
+            >
+                {frosted ? (
+                    <>
+                        {/* Frosted glass: translucent fill + soft dashed border */}
+                        <polygon
+                            points={points}
+                            fill="rgba(255, 255, 255, 0.85)"
+                            stroke="rgba(160,160,180,0.35)"
+                            strokeWidth="6"
+                            strokeDasharray="8 4"
+                        />
+                    </>
+                ) : (
+                    <>
+                        {/* Background white fill + 4px inner accent border (strokeWidth 8 clips 4px off) */}
+                        <polygon
+                            points={points}
+                            fill="rgba(255, 255, 255, 1)"
+                            stroke={accent}
+                            strokeWidth="8"
+                        />
+                        {/* 2px inner gray border (strokeWidth 4 clips 2px off), overlays the accent */}
+                        <polygon
+                            points={points}
+                            fill="none"
+                            stroke="rgba(0,0,0,0.15)"
+                            strokeWidth="4"
+                        />
+                    </>
+                )}
+            </svg>
+
+            {/* Content Container (z-index ensures it sits above the background SVG) */}
+            <div className="relative z-10 flex flex-col items-center justify-center w-full h-full gap-2 p-5 text-center">
+                {children}
+            </div>
+        </div>
+    );
+
+    // Frosted faces don't link anywhere
+    if (frosted) return wrapper;
+
     return (
         <Link href={`/projects/${slug}`}>
-            <div
-                onMouseEnter={onMouseEnter}
-                onMouseLeave={onMouseLeave}
-                className="animate-line relative cursor-pointer transition-transform hover:scale-105 block"
-                style={{
-                    width: "205px",
-                    height: "205px",
-                    clipPath: PENTAGON_CLIP,
-                    animationDelay: `${delay}s`,
-                }}
-            >
-                {/* Background & Border SVG mimicking CSS inset borders */}
-                <svg
-                    className="absolute inset-0 w-full h-full pointer-events-none z-0"
-                    viewBox="0 0 205 205"
-                >
-                    {/* Background white fill + 4px inner accent border (strokeWidth 8 clips 4px off) */}
-                    <polygon
-                        points={points}
-                        fill="rgba(255, 255, 255, 1)"
-                        stroke={accent}
-                        strokeWidth="8"
-                    />
-                    {/* 2px inner gray border (strokeWidth 4 clips 2px off), overlays the accent */}
-                    <polygon
-                        points={points}
-                        fill="none"
-                        stroke="rgba(0,0,0,0.15)"
-                        strokeWidth="4"
-                    />
-                </svg>
-
-                {/* Content Container (z-index ensures it sits above the background SVG) */}
-                <div className="relative z-10 flex flex-col items-center justify-center w-full h-full gap-2 p-5 text-center">
-                    {children}
-                </div>
-            </div>
+            {wrapper}
         </Link>
     );
 }
 
 const FACE_DEFINITIONS: FaceData[] = [
+    // ── 0: Portrait ──────────────────────────────────────────────────────────
     {
         direction: [0, 1, phi],
         label: "Portrait",
@@ -220,13 +246,14 @@ const FACE_DEFINITIONS: FaceData[] = [
         renderContent: (handlers) => (
             <FaceCard accent="rgba(6,182,212,0.6)" slug="portrait" index={0} {...handlers}>
                 <img src="/images/portrait/SJ.png" alt="Portrait" className="w-15 h-15 " />
-                <h2 className="text-sm font-bold text-zinc-800">Simon Shenghua Jin</h2>
+                <h2 className="text-sm font-bold text-zinc-800">Simon Jin</h2>
                 <p className="text-[9px] tracking-widest text-cyan-500 uppercase">
                     Robotics | ML | 3D Design
                 </p>
             </FaceCard>
         ),
     },
+    // ── 1: Footer ────────────────────────────────────────────────────────────
     {
         direction: [0, -1, -phi],
         label: "Footer",
@@ -244,6 +271,7 @@ const FACE_DEFINITIONS: FaceData[] = [
             </FaceCard>
         ),
     },
+    // ── 2: HardHaQ ───────────────────────────────────────────────────────────
     {
         direction: [0, 1, -phi],
         label: "HardHaQ",
@@ -260,30 +288,16 @@ const FACE_DEFINITIONS: FaceData[] = [
             </FaceCard>
         ),
     },
+    // ── 3: Macropad (swapped from slot 4) ────────────────────────────────────
     {
         direction: [0, -1, phi],
-        label: "HackML",
-        slug: "hackml",
-        accent: "rgba(139,92,246,0.5)",
-        image: "https://placehold.co/800x600/ede9fe/6d28d9?text=HackML",
-        description: "Developed advanced machine learning models with robust K-fold cross-validation techniques for optimal predictive performance.",
-        renderContent: (handlers) => (
-            <FaceCard accent="rgba(139,92,246,0.5)" slug="hackml" index={3} {...handlers}>
-                <span className="text-[8px] font-bold tracking-widest text-violet-600 uppercase">Machine Learning</span>
-                <h3 className="text-xs font-bold text-zinc-900">HackML</h3>
-                <p className="text-[9px] text-zinc-500">New Grade Study</p>
-            </FaceCard>
-        ),
-    },
-    {
-        direction: [1, phi, 0],
         label: "Macropad",
         slug: "macropad",
         accent: "rgba(16,185,129,0.5)",
         image: "/images/macropad/switch.png",
         description: "Engineered a custom hall-effect macropad from scratch, featuring a custom KiCad PCB and embedded firmware.",
         renderContent: (handlers) => (
-            <FaceCard accent="rgba(16,185,129,0.5)" slug="macropad" index={4} {...handlers}>
+            <FaceCard accent="rgba(16,185,129,0.5)" slug="macropad" index={3} {...handlers}>
                 <img src="/images/macropad/macropad.png" style={{ width: '100%', height: '75px', objectFit: 'contain' }} />
                 <span className="text-[8px] font-bold tracking-widest text-emerald-600 uppercase">Hardware</span>
                 <h3 className="text-xs font-bold text-zinc-900">Custom Macropad</h3>
@@ -291,6 +305,21 @@ const FACE_DEFINITIONS: FaceData[] = [
             </FaceCard>
         ),
     },
+    // ── 4: Frosted placeholder (was hackml) ──────────────────────────────────
+    {
+        direction: [1, phi, 0],
+        label: "",
+        slug: "placeholder-1",
+        accent: "rgba(160,160,180,0.3)",
+        description: "This project is currently under development. Check back soon for updates.",
+        isFrosted: true,
+        renderContent: (handlers) => (
+            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-1" index={4} frosted {...handlers}>
+                <div className="animate-shimmer absolute inset-0 pointer-events-none" />
+            </FaceCard>
+        ),
+    },
+    // ── 5: Parabellum ────────────────────────────────────────────────────────
     {
         direction: [-1, phi, 0],
         label: "Parabellum",
@@ -307,6 +336,7 @@ const FACE_DEFINITIONS: FaceData[] = [
             </FaceCard>
         ),
     },
+    // ── 6: HUDson ────────────────────────────────────────────────────────────
     {
         direction: [1, -phi, 0],
         label: "HUDson",
@@ -323,30 +353,16 @@ const FACE_DEFINITIONS: FaceData[] = [
             </FaceCard>
         ),
     },
+    // ── 7: Telebuddy (swapped from slot 8) ───────────────────────────────────
     {
         direction: [-1, -phi, 0],
-        label: "Air Mouse",
-        slug: "air-mouse",
-        accent: "rgba(249,115,22,0.5)",
-        image: "https://placehold.co/800x600/ffedd5/ea580c?text=Air+Mouse",
-        description: "Created an intuitive air mouse device during JourneyHacks. Utilized sensor fusion with IMUs to translate physical gestures to stable cursor movements.",
-        renderContent: (handlers) => (
-            <FaceCard accent="rgba(249,115,22,0.5)" slug="air-mouse" index={7} {...handlers}>
-                <span className="text-[8px] font-bold tracking-widest text-orange-600 uppercase">Integration</span>
-                <h3 className="text-xs font-bold text-zinc-900">Air Mouse</h3>
-                <p className="text-[9px] text-zinc-500">JourneyHacks · IMU Fusion</p>
-            </FaceCard>
-        ),
-    },
-    {
-        direction: [phi, 0, 1],
         label: "Telebuddy (Solder Bot)",
         slug: "telebuddy",
         accent: "rgba(20,184,166,0.5)",
         image: "/images/telebuddy/telebuddy.jpg",
         description: "A 6-DOF teleoperated robotic arm specifically designed for precision soldering tasks. Won Science Tech for Social Good at Hack the Coast.",
         renderContent: (handlers) => (
-            <FaceCard accent="rgba(20,184,166,0.5)" slug="telebuddy" index={8} {...handlers}>
+            <FaceCard accent="rgba(20,184,166,0.5)" slug="telebuddy" index={7} {...handlers}>
                 <img src="/images/telebuddy/hackthecoast.png" alt="Telebuddy" className="w-10 h-10" />
                 <span className="text-[8px] font-bold tracking-widest text-teal-600 uppercase">Mechatronics</span>
                 <h3 className="text-xs font-bold text-zinc-900">Telebuddy</h3>
@@ -354,48 +370,61 @@ const FACE_DEFINITIONS: FaceData[] = [
             </FaceCard>
         ),
     },
+    // ── 8: Frosted placeholder (was airmouse) ────────────────────────────────
+    {
+        direction: [phi, 0, 1],
+        label: "",
+        slug: "placeholder-2",
+        accent: "rgba(160,160,180,0.3)",
+        description: "This project is currently under development. Check back soon for updates.",
+        isFrosted: true,
+        renderContent: (handlers) => (
+            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-2" index={8} frosted {...handlers}>
+                <div className="animate-shimmer absolute inset-0 pointer-events-none" />
+            </FaceCard>
+        ),
+    },
+    // ── 9: Resume Builder (swapped from slot 10) ─────────────────────────────
     {
         direction: [-phi, 0, 1],
-        label: "Research",
-        slug: "research",
-        accent: "rgba(99,102,241,0.5)",
-        image: "https://placehold.co/800x600/e0e7ff/4f46e5?text=Robotics+Lab",
-        description: "Conducting research at the Robotics Lab. Developing automated pipelines for OBJ to URDF conversion using ROS and Docker.",
+        label: "Resume Builder",
+        slug: "resume-builder",
+        accent: "rgba(16,185,129,0.5)",
+        image: "/images/resume-builder/preview.png",
+        description: "A local-first AI resume builder powered by a local LLM (llama.cpp). Generates tailored LaTeX resumes from structured experience data, with live editor and Tauri-native PDF export.",
         renderContent: (handlers) => (
-            <FaceCard accent="rgba(99,102,241,0.5)" slug="research" index={9} {...handlers}>
-                <span className="text-[8px] font-bold tracking-widest text-indigo-600 uppercase">Research</span>
-                <h3 className="text-xs font-bold text-zinc-900">Robotics Lab</h3>
-                <p className="text-[9px] text-zinc-500">OBJ→URDF · ROS · Docker</p>
+            <FaceCard accent="rgba(16,185,129,0.5)" slug="resume-builder" index={9} {...handlers}>
+                <span className="text-[8px] font-bold tracking-widest text-emerald-600 uppercase">Dev Tool</span>
+                <h3 className="text-xs font-bold text-zinc-900">Resume Builder</h3>
+                <p className="text-[9px] text-zinc-500">Local LLM · LaTeX · Tauri</p>
             </FaceCard>
         ),
     },
+    // ── 10: Frosted placeholder (was roboticslab) ────────────────────────────
     {
         direction: [phi, 0, -1],
-        label: "Quant",
-        slug: "quant",
-        accent: "rgba(234,179,8,0.5)",
-        image: "https://placehold.co/800x600/fef08a/ca8a04?text=Quant+Finance",
-        description: "Competed in the CPABC Competition focusing on quantitative finance. Implemented portfolio optimization models.",
+        label: "",
+        slug: "placeholder-3",
+        accent: "rgba(160,160,180,0.3)",
+        description: "This project is currently under development. Check back soon for updates.",
+        isFrosted: true,
         renderContent: (handlers) => (
-            <FaceCard accent="rgba(234,179,8,0.5)" slug="quant" index={10} {...handlers}>
-                <span className="text-[8px] font-bold tracking-widest text-yellow-600 uppercase">Quant Finance</span>
-                <h3 className="text-xs font-bold text-zinc-900">CPABC Competition</h3>
-                <p className="text-[9px] text-zinc-500">Portfolio Optimization</p>
+            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-3" index={10} frosted {...handlers}>
+                <div className="animate-shimmer absolute inset-0 pointer-events-none" />
             </FaceCard>
         ),
     },
+    // ── 11: Frosted placeholder (was awards) ─────────────────────────────────
     {
         direction: [-phi, 0, -1],
-        label: "Awards",
-        slug: "awards",
-        accent: "rgba(236,72,153,0.5)",
-        image: "https://placehold.co/800x600/fce7f3/db2777?text=Awards",
-        description: "Recipient of prestigious academic awards, including the Leduc and SFU Alumni scholarships. Expanding horizons in academics.",
+        label: "",
+        slug: "placeholder-4",
+        accent: "rgba(160,160,180,0.3)",
+        description: "This project is currently under development. Check back soon for updates.",
+        isFrosted: true,
         renderContent: (handlers) => (
-            <FaceCard accent="rgba(236,72,153,0.5)" slug="awards" index={11} {...handlers}>
-                <span className="text-[8px] font-bold tracking-widest text-pink-600 uppercase">Awards</span>
-                <h3 className="text-xs font-bold text-zinc-900">Scholarships</h3>
-                <p className="text-[9px] text-zinc-500">Leduc · SFU Alumni</p>
+            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-4" index={11} frosted {...handlers}>
+                <div className="animate-shimmer absolute inset-0 pointer-events-none" />
             </FaceCard>
         ),
     },
@@ -403,23 +432,25 @@ const FACE_DEFINITIONS: FaceData[] = [
 
 // ─── Popup Window Components ──────────────────────────────────────────────────
 function TerminalText({ text }: { text: string }) {
-    const [displayedText, setDisplayedText] = useState("");
+    const [charCount, setCharCount] = useState(0);
+    const countRef = useRef(0);
 
     useEffect(() => {
-        setDisplayedText("");
-        let i = 0;
+        setCharCount(0);
+        countRef.current = 0;
         const interval = setInterval(() => {
-            if (i < text.length) {
-                setDisplayedText(prev => prev + text[i]);
-                i++;
-            } else {
+            countRef.current += 1;
+            if (countRef.current >= text.length) {
+                setCharCount(text.length);
                 clearInterval(interval);
+            } else {
+                setCharCount(countRef.current);
             }
         }, 30);
         return () => clearInterval(interval);
     }, [text]);
 
-    return <span>{displayedText}</span>;
+    return <span>{text.slice(0, charCount)}</span>;
 }
 
 function ProjectDetailsWindow({ face }: { face: FaceData | null }) {
@@ -437,39 +468,58 @@ function ProjectDetailsWindow({ face }: { face: FaceData | null }) {
 
     if (!activeFace) return null;
 
+    // Don't show popup for frosted placeholder faces
+    if (activeFace.isFrosted) return null;
+
     // The entire window's opacity is controlled by both its general visibility (is hovering?) 
     // AND the rapid blinking state effect.
     const finalOpacity = isVisible ? 1 : 0;
+
+    const isFrosted = activeFace.isFrosted;
 
     return (
         <div
             className={`w-[400px] p-6 flex flex-col gap-5 z-50 pointer-events-none transition-all duration-300 ease-out`}
             style={{
-                background: "rgba(255, 255, 255, 0.95)",
-                border: "1px solid rgba(0,0,0,0.15)",
-                boxShadow: `inset 0 0 0 2px ${activeFace.accent.replace(/[\d.]+\)$/g, '0.8)')}, 0 15px 50px rgba(0,0,0,0.2)`,
-                backdropFilter: "blur(16px)",
+                background: isFrosted ? "rgba(255, 255, 255, 0.6)" : "rgba(255, 255, 255, 0.95)",
+                border: isFrosted ? "1px solid rgba(200,200,210,0.4)" : "1px solid rgba(0,0,0,0.15)",
+                boxShadow: isFrosted
+                    ? `0 8px 32px rgba(0,0,0,0.08)`
+                    : `inset 0 0 0 2px ${activeFace.accent.replace(/[\d.]+\)$/g, '0.8)')}, 0 15px 50px rgba(0,0,0,0.2)`,
+                backdropFilter: isFrosted ? "blur(20px) saturate(1.2)" : "blur(16px)",
                 opacity: finalOpacity,
                 transform: isVisible ? "translateY(0) scale(1) perspective(800px) rotateY(-8deg)" : "translateY(15px) scale(0.95) perspective(800px) rotateY(-8deg)",
                 transformOrigin: "bottom right",
                 borderRadius: "2px",
             }}
         >
-            <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
-                <h3 className="font-bold text-xl text-zinc-900" style={{ color: activeFace.accent.replace(/[\d.]+\)$/g, '1)') }}>{activeFace.label}</h3>
-                <span className="text-xs font-mono text-zinc-400">~/{activeFace.slug}</span>
+            <div className={`flex items-center justify-between pb-3 border-b ${isFrosted ? 'border-zinc-300/40' : 'border-zinc-200'}`}>
+                <h3 className={`font-bold text-xl ${isFrosted ? 'text-zinc-400' : 'text-zinc-900'}`}
+                    style={isFrosted ? {} : { color: activeFace.accent.replace(/[\d.]+\)$/g, '1)') }}>
+                    {isFrosted ? '🔒 ' : ''}{activeFace.label}
+                </h3>
+                <span className={`text-xs font-mono ${isFrosted ? 'text-zinc-400/60' : 'text-zinc-400'}`}>~/{activeFace.slug}</span>
             </div>
 
-            {activeFace.image && (
+            {!isFrosted && activeFace.image && (
                 <div className="w-full aspect-video bg-zinc-100 overflow-hidden relative border border-zinc-200 shadow-inner rounded-sm">
                     <img src={activeFace.image} alt={activeFace.label} className="w-full h-full object-cover" />
                 </div>
             )}
 
-            <div className="font-mono text-[13px] text-zinc-700 min-h-[85px] leading-relaxed bg-zinc-50/80 p-4 border border-zinc-200 shadow-inner overflow-hidden rounded-sm">
-                <span className="text-zinc-600 font-bold mr-2 select-none">&gt;</span>
-                <TerminalText text={activeFace.description} />
-                <span className="animate-pulse inline-block w-2 h-4 bg-zinc-400 ml-1.5 align-middle"></span>
+            <div className={`font-mono text-[13px] min-h-[85px] leading-relaxed p-4 border overflow-hidden rounded-sm ${
+                isFrosted
+                    ? 'text-zinc-400/70 bg-white/30 border-zinc-200/40'
+                    : 'text-zinc-700 bg-zinc-50/80 border-zinc-200 shadow-inner'
+            }`}
+                 style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
+                <div style={{ display: 'table-row' }}>
+                    <span className={`font-bold select-none ${isFrosted ? 'text-zinc-400/50' : 'text-zinc-600'}`} style={{ display: 'table-cell', width: '1.2em', verticalAlign: 'top' }}>&gt;</span>
+                    <span style={{ display: 'table-cell', verticalAlign: 'top' }}>
+                        <TerminalText text={activeFace.description} />
+                        <span className={`animate-pulse inline-block w-2 h-4 ml-1.5 align-middle ${isFrosted ? 'bg-zinc-300/50' : 'bg-zinc-400'}`}></span>
+                    </span>
+                </div>
             </div>
         </div>
     );
