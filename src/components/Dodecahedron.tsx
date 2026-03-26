@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import Link from 'next/link';
 import * as THREE from "three";
+import { useTheme } from "./ThemeProvider";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const RADIUS = 2.5;
@@ -142,7 +143,7 @@ interface FaceData {
     image?: string;
     description: string;
     isFrosted?: boolean;
-    renderContent: (hoverHandlers: { onMouseEnter: () => void, onMouseLeave: () => void }) => React.ReactNode;
+    renderContent: (hoverHandlers: { onMouseEnter: () => void, onMouseLeave: () => void }, isDark: boolean) => React.ReactNode;
 }
 
 function FaceCard({
@@ -151,6 +152,7 @@ function FaceCard({
     children,
     index = 0,
     frosted = false,
+    isDark = false,
     onMouseEnter,
     onMouseLeave,
 }: {
@@ -159,6 +161,7 @@ function FaceCard({
     children: React.ReactNode;
     index?: number;
     frosted?: boolean;
+    isDark?: boolean;
     onMouseEnter?: () => void;
     onMouseLeave?: () => void;
 }) {
@@ -191,26 +194,26 @@ function FaceCard({
                         {/* Frosted glass: translucent fill + soft dashed border */}
                         <polygon
                             points={points}
-                            fill="rgba(255, 255, 255, 0.85)"
-                            stroke="rgba(160,160,180,0.35)"
+                            fill={isDark ? "rgba(30, 30, 35, 0.85)" : "rgba(255, 255, 255, 0.85)"}
+                            stroke={isDark ? "rgba(80,80,100,0.35)" : "rgba(160,160,180,0.35)"}
                             strokeWidth="6"
                             strokeDasharray="8 4"
                         />
                     </>
                 ) : (
                     <>
-                        {/* Background white fill + 4px inner accent border (strokeWidth 8 clips 4px off) */}
+                        {/* Background fill + 4px inner accent border (strokeWidth 8 clips 4px off) */}
                         <polygon
                             points={points}
-                            fill="rgba(255, 255, 255, 1)"
+                            fill={isDark ? "rgba(24, 24, 27, 1)" : "rgba(255, 255, 255, 1)"}
                             stroke={accent}
                             strokeWidth="8"
                         />
-                        {/* 2px inner gray border (strokeWidth 4 clips 2px off), overlays the accent */}
+                        {/* 2px inner border (strokeWidth 4 clips 2px off), overlays the accent */}
                         <polygon
                             points={points}
                             fill="none"
-                            stroke="rgba(0,0,0,0.15)"
+                            stroke={isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.15)"}
                             strokeWidth="4"
                         />
                     </>
@@ -243,10 +246,10 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(6,182,212,0.6)",
         image: "/images/portrait/portrait.jpg",
         description: "Simon Jin. Robotics, ML, and Software Engineering. Passionate about building intelligent systems.",
-        renderContent: (handlers) => (
-            <FaceCard accent="rgba(6,182,212,0.6)" slug="portrait" index={0} {...handlers}>
+        renderContent: (handlers, isDark) => (
+            <FaceCard accent="rgba(6,182,212,0.6)" slug="portrait" index={0} isDark={isDark} {...handlers}>
                 <img src="/images/portrait/SJ.png" alt="Portrait" className="w-15 h-15 " />
-                <h2 className="text-sm font-bold text-zinc-800">Simon Jin</h2>
+                <h2 className="text-sm font-bold text-zinc-800 dark:text-zinc-200">Simon Jin</h2>
                 <p className="text-[9px] tracking-widest text-cyan-500 uppercase">
                     Robotics | ML | 3D Design
                 </p>
@@ -260,13 +263,13 @@ const FACE_DEFINITIONS: FaceData[] = [
         slug: "footer",
         accent: "rgba(120,120,120,0.4)",
         description: "Connect with me on LinkedIn and GitHub, or download my resume to see my full experience.",
-        renderContent: (handlers) => (
-            <FaceCard accent="rgba(120,120,120,0.4)" slug="footer" index={1} {...handlers}>
-                <h3 className="text-sm font-bold tracking-widest text-zinc-600 uppercase mb-2">Connect</h3>
+        renderContent: (handlers, isDark) => (
+            <FaceCard accent="rgba(120,120,120,0.4)" slug="footer" index={1} isDark={isDark} {...handlers}>
+                <h3 className="text-sm font-bold tracking-widest text-zinc-600 dark:text-zinc-400 uppercase mb-2">Connect</h3>
                 <div className="flex gap-4">
-                    <img src="/images/footer/linkedin.svg" alt="Linkedin" className="w-7 h-7 hover:scale-110 transition-transform cursor-pointer" />
-                    <img src="/images/footer/github.svg" alt="Github" className="w-7 h-7 hover:scale-110 transition-transform cursor-pointer" />
-                    <img src="/images/footer/resume.svg" alt="Resume" className="w-7 h-7 hover:scale-110 transition-transform cursor-pointer" />
+                    <img src="/images/footer/linkedin.svg" alt="Linkedin" className="w-7 h-7 hover:scale-110 transition-transform cursor-pointer dark:invert" />
+                    <img src="/images/footer/github.svg" alt="Github" className="w-7 h-7 hover:scale-110 transition-transform cursor-pointer dark:invert" />
+                    <img src="/images/footer/resume.svg" alt="Resume" className="w-7 h-7 hover:scale-110 transition-transform cursor-pointer dark:invert" />
                 </div>
             </FaceCard>
         ),
@@ -279,12 +282,12 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(245,158,11,0.5)",
         image: "/images/hardhaq/circuit.png",
         description: "1st Place winner at HardHaQ 2025, a quantum hardware hackathon hosted by the North American Quantum Consortium. ",
-        renderContent: (handlers) => (
-            <FaceCard accent="rgba(245,158,11,0.5)" slug="hardhaq" index={2} {...handlers}>
+        renderContent: (handlers, isDark) => (
+            <FaceCard accent="rgba(245,158,11,0.5)" slug="hardhaq" index={2} isDark={isDark} {...handlers}>
                 <img src="/images/hardhaq/nasc.png" alt="HardHaQ" className="w-15 h-15 rounded-full" />
                 <span className="text-[8px] font-bold tracking-widest text-amber-600 uppercase">🏆 1st Place</span>
-                <h3 className="text-xs font-bold text-zinc-900">HardHaQ 2025</h3>
-                <p className="text-[9px] text-zinc-500">Quantum Hardware Hackathon</p>
+                <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">HardHaQ 2025</h3>
+                <p className="text-[9px] text-zinc-500 dark:text-zinc-400">Quantum Hardware Hackathon</p>
             </FaceCard>
         ),
     },
@@ -296,12 +299,12 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(16,185,129,0.5)",
         image: "/images/macropad/switch.png",
         description: "Engineered a custom hall-effect macropad from scratch, featuring a custom KiCad PCB and embedded firmware.",
-        renderContent: (handlers) => (
-            <FaceCard accent="rgba(16,185,129,0.5)" slug="macropad" index={3} {...handlers}>
+        renderContent: (handlers, isDark) => (
+            <FaceCard accent="rgba(16,185,129,0.5)" slug="macropad" index={3} isDark={isDark} {...handlers}>
                 <img src="/images/macropad/macropad.png" style={{ width: '100%', height: '75px', objectFit: 'contain' }} />
                 <span className="text-[8px] font-bold tracking-widest text-emerald-600 uppercase">Hardware</span>
-                <h3 className="text-xs font-bold text-zinc-900">Custom Macropad</h3>
-                <p className="text-[9px] text-zinc-500">Hall-effect · KiCad PCB</p>
+                <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">Custom Macropad</h3>
+                <p className="text-[9px] text-zinc-500 dark:text-zinc-400">Hall-effect · KiCad PCB</p>
             </FaceCard>
         ),
     },
@@ -313,8 +316,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(160,160,180,0.3)",
         description: "This project is currently under development. Check back soon for updates.",
         isFrosted: true,
-        renderContent: (handlers) => (
-            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-1" index={4} frosted {...handlers}>
+        renderContent: (handlers, isDark) => (
+            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-1" index={4} frosted isDark={isDark} {...handlers}>
                 <div className="animate-shimmer absolute inset-0 pointer-events-none" />
             </FaceCard>
         ),
@@ -327,12 +330,12 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(96, 34, 44, 0.5)",
         image: "/images/parabellum/booth.jpg",
         description: "Served as 3-year captain for FTC Parabellum. Led the team to compete in the European Internationals and mentored junior members.",
-        renderContent: (handlers) => (
-            <FaceCard accent="rgba(96, 34, 44, 0.5)" slug="parabellum" index={5} {...handlers}>
+        renderContent: (handlers, isDark) => (
+            <FaceCard accent="rgba(96, 34, 44, 0.5)" slug="parabellum" index={5} isDark={isDark} {...handlers}>
                 <img src="/images/parabellum/logo.svg" alt="Parabellum Logo" className="w-20 h-20" />
                 <span className="text-[8px] font-bold tracking-widest text-rose-600 uppercase">Parabellum</span>
-                <h3 className="text-xs font-bold text-zinc-900">FTC Parabellum</h3>
-                <p className="text-[9px] text-zinc-500">3-Year Captain · EU Intl.</p>
+                <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">FTC Parabellum</h3>
+                <p className="text-[9px] text-zinc-500 dark:text-zinc-400">3-Year Captain · EU Intl.</p>
             </FaceCard>
         ),
     },
@@ -344,12 +347,12 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(59,130,246,0.5)",
         image: "/images/hudson/gallery.jpg",
         description: "Software project built at nwHacks. Integrated ElevenLabs API for advanced text-to-speech functionality in a head-up display system.",
-        renderContent: (handlers) => (
-            <FaceCard accent="rgba(59,130,246,0.5)" slug="hudson" index={6} {...handlers}>
+        renderContent: (handlers, isDark) => (
+            <FaceCard accent="rgba(59,130,246,0.5)" slug="hudson" index={6} isDark={isDark} {...handlers}>
                 <img src="/images/hudson/logo.jpg" alt="HUDson" className="w-15 h-15" />
                 <span className="text-[8px] font-bold tracking-widest text-blue-600 uppercase">Software</span>
-                <h3 className="text-xs font-bold text-zinc-900">HUDson</h3>
-                <p className="text-[9px] text-zinc-500">nwHacks · ElevenLabs API</p>
+                <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">HUDson</h3>
+                <p className="text-[9px] text-zinc-500 dark:text-zinc-400">nwHacks · ElevenLabs API</p>
             </FaceCard>
         ),
     },
@@ -361,12 +364,12 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(20,184,166,0.5)",
         image: "/images/telebuddy/telebuddy.jpg",
         description: "A 6-DOF teleoperated robotic arm specifically designed for precision soldering tasks. Won Science Tech for Social Good at Hack the Coast.",
-        renderContent: (handlers) => (
-            <FaceCard accent="rgba(20,184,166,0.5)" slug="telebuddy" index={7} {...handlers}>
+        renderContent: (handlers, isDark) => (
+            <FaceCard accent="rgba(20,184,166,0.5)" slug="telebuddy" index={7} isDark={isDark} {...handlers}>
                 <img src="/images/telebuddy/hackthecoast.png" alt="Telebuddy" className="w-10 h-10" />
                 <span className="text-[8px] font-bold tracking-widest text-teal-600 uppercase">Mechatronics</span>
-                <h3 className="text-xs font-bold text-zinc-900">Telebuddy</h3>
-                <p className="text-[9px] text-zinc-500">AR and Teleoperation</p>
+                <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">Telebuddy</h3>
+                <p className="text-[9px] text-zinc-500 dark:text-zinc-400">AR and Teleoperation</p>
             </FaceCard>
         ),
     },
@@ -378,8 +381,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(160,160,180,0.3)",
         description: "This project is currently under development. Check back soon for updates.",
         isFrosted: true,
-        renderContent: (handlers) => (
-            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-2" index={8} frosted {...handlers}>
+        renderContent: (handlers, isDark) => (
+            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-2" index={8} frosted isDark={isDark} {...handlers}>
                 <div className="animate-shimmer absolute inset-0 pointer-events-none" />
             </FaceCard>
         ),
@@ -392,11 +395,11 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(16,185,129,0.5)",
         image: "/images/resume-builder/preview.png",
         description: "A local-first AI resume builder powered by a local LLM (llama.cpp). Generates tailored LaTeX resumes from structured experience data, with live editor and Tauri-native PDF export.",
-        renderContent: (handlers) => (
-            <FaceCard accent="rgba(16,185,129,0.5)" slug="resume-builder" index={9} {...handlers}>
+        renderContent: (handlers, isDark) => (
+            <FaceCard accent="rgba(16,185,129,0.5)" slug="resume-builder" index={9} isDark={isDark} {...handlers}>
                 <span className="text-[8px] font-bold tracking-widest text-emerald-600 uppercase">Dev Tool</span>
-                <h3 className="text-xs font-bold text-zinc-900">Resume Builder</h3>
-                <p className="text-[9px] text-zinc-500">Local LLM · LaTeX · Tauri</p>
+                <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">Resume Builder</h3>
+                <p className="text-[9px] text-zinc-500 dark:text-zinc-400">Local LLM · LaTeX · Tauri</p>
             </FaceCard>
         ),
     },
@@ -408,8 +411,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(160,160,180,0.3)",
         description: "This project is currently under development. Check back soon for updates.",
         isFrosted: true,
-        renderContent: (handlers) => (
-            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-3" index={10} frosted {...handlers}>
+        renderContent: (handlers, isDark) => (
+            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-3" index={10} frosted isDark={isDark} {...handlers}>
                 <div className="animate-shimmer absolute inset-0 pointer-events-none" />
             </FaceCard>
         ),
@@ -422,8 +425,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(160,160,180,0.3)",
         description: "This project is currently under development. Check back soon for updates.",
         isFrosted: true,
-        renderContent: (handlers) => (
-            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-4" index={11} frosted {...handlers}>
+        renderContent: (handlers, isDark) => (
+            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-4" index={11} frosted isDark={isDark} {...handlers}>
                 <div className="animate-shimmer absolute inset-0 pointer-events-none" />
             </FaceCard>
         ),
@@ -453,7 +456,7 @@ function TerminalText({ text }: { text: string }) {
     return <span>{text.slice(0, charCount)}</span>;
 }
 
-function ProjectDetailsWindow({ face }: { face: FaceData | null }) {
+function ProjectDetailsWindow({ face, isDark }: { face: FaceData | null; isDark: boolean }) {
     // Keep track of the last active face so the window elegantly fades out when closing 
     // instead of instantly snapping to empty content.
     const [activeFace, setActiveFace] = useState<FaceData | null>(null);
@@ -477,15 +480,22 @@ function ProjectDetailsWindow({ face }: { face: FaceData | null }) {
 
     const isFrosted = activeFace.isFrosted;
 
+    const bgColor = isFrosted
+        ? (isDark ? "rgba(20, 20, 25, 0.6)" : "rgba(255, 255, 255, 0.6)")
+        : (isDark ? "rgba(24, 24, 27, 0.95)" : "rgba(255, 255, 255, 0.95)");
+    const borderColor = isFrosted
+        ? (isDark ? "1px solid rgba(60,60,70,0.4)" : "1px solid rgba(200,200,210,0.4)")
+        : (isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(0,0,0,0.15)");
+
     return (
         <div
             className={`w-[400px] p-6 flex flex-col gap-5 z-50 pointer-events-none transition-all duration-300 ease-out`}
             style={{
-                background: isFrosted ? "rgba(255, 255, 255, 0.6)" : "rgba(255, 255, 255, 0.95)",
-                border: isFrosted ? "1px solid rgba(200,200,210,0.4)" : "1px solid rgba(0,0,0,0.15)",
+                background: bgColor,
+                border: borderColor,
                 boxShadow: isFrosted
                     ? `0 8px 32px rgba(0,0,0,0.08)`
-                    : `inset 0 0 0 2px ${activeFace.accent.replace(/[\d.]+\)$/g, '0.8)')}, 0 15px 50px rgba(0,0,0,0.2)`,
+                    : `inset 0 0 0 2px ${activeFace.accent.replace(/[\d.]+\)$/g, '0.8)')}, 0 15px 50px rgba(0,0,0,${isDark ? '0.5' : '0.2'})`,
                 backdropFilter: isFrosted ? "blur(20px) saturate(1.2)" : "blur(16px)",
                 opacity: finalOpacity,
                 transform: isVisible ? "translateY(0) scale(1) perspective(800px) rotateY(-8deg)" : "translateY(15px) scale(0.95) perspective(800px) rotateY(-8deg)",
@@ -493,16 +503,16 @@ function ProjectDetailsWindow({ face }: { face: FaceData | null }) {
                 borderRadius: "2px",
             }}
         >
-            <div className={`flex items-center justify-between pb-3 border-b ${isFrosted ? 'border-zinc-300/40' : 'border-zinc-200'}`}>
-                <h3 className={`font-bold text-xl ${isFrosted ? 'text-zinc-400' : 'text-zinc-900'}`}
+            <div className={`flex items-center justify-between pb-3 border-b ${isFrosted ? 'border-zinc-300/40' : (isDark ? 'border-zinc-700' : 'border-zinc-200')}`}>
+                <h3 className={`font-bold text-xl ${isFrosted ? 'text-zinc-400' : (isDark ? 'text-zinc-100' : 'text-zinc-900')}`}
                     style={isFrosted ? {} : { color: activeFace.accent.replace(/[\d.]+\)$/g, '1)') }}>
                     {isFrosted ? '🔒 ' : ''}{activeFace.label}
                 </h3>
-                <span className={`text-xs font-mono ${isFrosted ? 'text-zinc-400/60' : 'text-zinc-400'}`}>~/{activeFace.slug}</span>
+                <span className={`text-xs font-mono ${isFrosted ? 'text-zinc-400/60' : (isDark ? 'text-zinc-500' : 'text-zinc-400')}`}>~/{activeFace.slug}</span>
             </div>
 
             {!isFrosted && activeFace.image && (
-                <div className="w-full aspect-video bg-zinc-100 overflow-hidden relative border border-zinc-200 shadow-inner rounded-sm">
+                <div className={`w-full aspect-video overflow-hidden relative shadow-inner rounded-sm ${isDark ? 'bg-zinc-800 border border-zinc-700' : 'bg-zinc-100 border border-zinc-200'}`}>
                     <img src={activeFace.image} alt={activeFace.label} className="w-full h-full object-cover" />
                 </div>
             )}
@@ -510,14 +520,16 @@ function ProjectDetailsWindow({ face }: { face: FaceData | null }) {
             <div className={`font-mono text-[13px] min-h-[85px] leading-relaxed p-4 border overflow-hidden rounded-sm ${
                 isFrosted
                     ? 'text-zinc-400/70 bg-white/30 border-zinc-200/40'
-                    : 'text-zinc-700 bg-zinc-50/80 border-zinc-200 shadow-inner'
+                    : (isDark
+                        ? 'text-zinc-300 bg-zinc-800/80 border-zinc-700 shadow-inner'
+                        : 'text-zinc-700 bg-zinc-50/80 border-zinc-200 shadow-inner')
             }`}
                  style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
                 <div style={{ display: 'table-row' }}>
-                    <span className={`font-bold select-none ${isFrosted ? 'text-zinc-400/50' : 'text-zinc-600'}`} style={{ display: 'table-cell', width: '1.2em', verticalAlign: 'top' }}>&gt;</span>
+                    <span className={`font-bold select-none ${isFrosted ? 'text-zinc-400/50' : (isDark ? 'text-zinc-500' : 'text-zinc-600')}`} style={{ display: 'table-cell', width: '1.2em', verticalAlign: 'top' }}>&gt;</span>
                     <span style={{ display: 'table-cell', verticalAlign: 'top' }}>
                         <TerminalText text={activeFace.description} />
-                        <span className={`animate-pulse inline-block w-2 h-4 ml-1.5 align-middle ${isFrosted ? 'bg-zinc-300/50' : 'bg-zinc-400'}`}></span>
+                        <span className={`animate-pulse inline-block w-2 h-4 ml-1.5 align-middle ${isFrosted ? 'bg-zinc-300/50' : (isDark ? 'bg-zinc-500' : 'bg-zinc-400')}`}></span>
                     </span>
                 </div>
             </div>
@@ -622,7 +634,7 @@ function computeFaces(geo: THREE.DodecahedronGeometry | THREE.BufferGeometry, al
     });
 }
 
-function FacePanel({ face, onHoverFace }: { face: ComputedFace, onHoverFace: (face: FaceData | null) => void }) {
+function FacePanel({ face, onHoverFace, isDark }: { face: ComputedFace, onHoverFace: (face: FaceData | null) => void, isDark: boolean }) {
     const groupRef = useRef<THREE.Group>(null);
     const htmlRef = useRef<HTMLDivElement>(null);
     // Use state instead of ref for visibility to avoid reading ref during render
@@ -664,7 +676,7 @@ function FacePanel({ face, onHoverFace }: { face: ComputedFace, onHoverFace: (fa
                     {face.data.renderContent({
                         onMouseEnter: () => { if (isFacingFront) onHoverFace(face.data); },
                         onMouseLeave: () => { if (isFacingFront) onHoverFace(null); }
-                    })}
+                    }, isDark)}
                 </div>
             </Html>
         </group>
@@ -673,6 +685,9 @@ function FacePanel({ face, onHoverFace }: { face: ComputedFace, onHoverFace: (fa
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function Dodecahedron() {
+    const { theme } = useTheme();
+    const isDark = theme === "dark";
+
     const groupRef = useRef<THREE.Group>(null);
     const pentGroupRef = useRef<THREE.Group>(null);
     const edgeLinesGroupRef = useRef<THREE.Group>(null);
@@ -865,12 +880,12 @@ export default function Dodecahedron() {
             <group ref={pentGroupRef}>
                 <mesh>
                     <primitive object={pentGeo} attach="geometry" />
-                    <meshBasicMaterial color="rgb(255, 255, 255)" side={THREE.DoubleSide} />
+                    <meshBasicMaterial color={isDark ? "#18181b" : "#ffffff"} side={THREE.DoubleSide} />
                 </mesh>
                 {pentPoints.slice(0, 5).map((_, i) => (
                     <mesh key={`pedge-${i}`} ref={(el) => { if (el) pentCylindersRef.current[i] = el; }}>
                         <cylinderGeometry args={[LINE_THICKNESS, LINE_THICKNESS, 1, 6]} />
-                        <meshBasicMaterial color="#000000" />
+                        <meshBasicMaterial color={isDark ? "#a1a1aa" : "#000000"} />
                     </mesh>
                 ))}
             </group>
@@ -880,7 +895,7 @@ export default function Dodecahedron() {
                 {sortedEdges.map((_, i) => (
                     <mesh key={`edge-${i}`} ref={(el) => { if (el) edgeCylindersRef.current[i] = el; }}>
                         <cylinderGeometry args={[LINE_THICKNESS, LINE_THICKNESS, 1, 6]} />
-                        <meshBasicMaterial color="#000000" />
+                        <meshBasicMaterial color={isDark ? "#a1a1aa" : "#000000"} />
                     </mesh>
                 ))}
             </group>
@@ -888,7 +903,7 @@ export default function Dodecahedron() {
             {/* ── Face panels — positioned from aligned geometry ── */}
             {showPanels &&
                 faces.map((face, i) => (
-                    <FacePanel key={`face-${i}`} face={face} onHoverFace={onHoverFace} />
+                    <FacePanel key={`face-${i}`} face={face} onHoverFace={onHoverFace} isDark={isDark} />
                 ))}
 
             {/* ── 2D Overlay Window (Shown on hover) ── */}
@@ -896,7 +911,7 @@ export default function Dodecahedron() {
                 <Html center zIndexRange={[200, 100]}>
                     <div className="pointer-events-none w-[100vw] h-[100vh] flex items-center justify-end relative z-50">
                         <div className="mr-[5vw] mb-12">
-                            <ProjectDetailsWindow face={hoveredFace} />
+                            <ProjectDetailsWindow face={hoveredFace} isDark={isDark} />
                         </div>
                     </div>
                 </Html>

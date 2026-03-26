@@ -3,6 +3,8 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import Dodecahedron from "@/components/Dodecahedron";
+import ThemeToggle from "@/components/ThemeToggle";
+import { useTheme } from "@/components/ThemeProvider";
 import { useState, useEffect, useRef } from "react";
 
 // ─── Terminal-style typewriter ───────────────────────────────────────────────
@@ -12,17 +14,17 @@ import { useState, useEffect, useRef } from "react";
 const TERMINAL_LINES = [
   { text: "> portfolio", style: "text-cyan-600 text-xs tracking-widest uppercase" },
   { text: "", style: "h-2" }, // spacer
-  { text: "Shenghua Jin", style: "text-3xl font-bold text-zinc-900" },
+  { text: "Shenghua Jin", style: "text-3xl font-bold text-zinc-900 dark:text-zinc-100" },
   { text: "", style: "h-3" }, // spacer
-  { text: "Mechatronics engineer and software", style: "text-sm text-zinc-600" },
-  { text: "developer with a passion for robotics,", style: "text-sm text-zinc-600" },
-  { text: "machine learning, and building things", style: "text-sm text-zinc-600" },
-  { text: "that bridge the digital-physical divide.", style: "text-sm text-zinc-600" },
+  { text: "Mechatronics engineer and software", style: "text-sm text-zinc-600 dark:text-zinc-400" },
+  { text: "developer with a passion for robotics,", style: "text-sm text-zinc-600 dark:text-zinc-400" },
+  { text: "machine learning, and building things", style: "text-sm text-zinc-600 dark:text-zinc-400" },
+  { text: "that bridge the digital-physical divide.", style: "text-sm text-zinc-600 dark:text-zinc-400" },
   { text: "", style: "h-2" }, // spacer
-  { text: "Currently studying at SFU, winning", style: "text-sm text-zinc-600" },
-  { text: "hackathons, and pushing the boundaries", style: "text-sm text-zinc-600" },
-  { text: "of what hardware and software can do", style: "text-sm text-zinc-600" },
-  { text: "together.", style: "text-sm text-zinc-600" },
+  { text: "Currently studying at SFU, winning", style: "text-sm text-zinc-600 dark:text-zinc-400" },
+  { text: "hackathons, and pushing the boundaries", style: "text-sm text-zinc-600 dark:text-zinc-400" },
+  { text: "of what hardware and software can do", style: "text-sm text-zinc-600 dark:text-zinc-400" },
+  { text: "together.", style: "text-sm text-zinc-600 dark:text-zinc-400" },
 ];
 
 // Flatten all characters with line/char indices for sequential reveal
@@ -98,13 +100,13 @@ function TerminalText() {
         <div className="mt-4 animate-line flex gap-3 pointer-events-auto" style={{ animationDelay: "0s" }}>
           <a
             href="#"
-            className="rounded border border-zinc-300 px-4 py-1.5 text-xs text-zinc-700 transition hover:bg-zinc-100"
+            className="rounded border border-zinc-300 dark:border-zinc-600 px-4 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
             view_projects
           </a>
           <a
             href="/resume"
-            className="rounded border border-zinc-300 px-4 py-1.5 text-xs text-zinc-700 transition hover:bg-zinc-100"
+            className="rounded border border-zinc-300 dark:border-zinc-600 px-4 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
             view_resume
           </a>
@@ -122,9 +124,14 @@ function TerminalText() {
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function Home() {
-  return (
-    <main className="relative h-screen w-screen overflow-hidden bg-white">
+  const { theme } = useTheme();
+  const canvasBg = theme === "dark" ? "#0a0a0a" : "#ffffff";
 
+  return (
+    <main className="relative h-screen w-screen overflow-hidden bg-white dark:bg-zinc-950">
+
+      {/* Theme toggle */}
+      <ThemeToggle />
 
       {/* Left-side terminal text */}
       <div className="pointer-events-none absolute inset-y-0 left-0 z-[200] flex w-[40%] flex-col justify-center px-12">
@@ -135,7 +142,7 @@ export default function Home() {
       <div className="absolute inset-0 z-0 pointer-events-auto">
         <Canvas
           camera={{ position: [0, 0, 8], fov: 50 }}
-          style={{ background: "#ffffff", pointerEvents: "auto" }}
+          style={{ background: canvasBg, pointerEvents: "auto" }}
         >
           <ambientLight intensity={0.8} />
           <pointLight position={[10, 10, 10]} intensity={0.6} />

@@ -1,14 +1,14 @@
 export default function ResumePage() {
     return (
-        <div className="min-h-screen bg-white text-gray-900 flex flex-col items-center justify-center p-4 sm:p-8">
-            <div className="w-full max-w-6xl h-[85vh] sm:h-[90vh] shadow-2xl rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+        <div className="min-h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 flex flex-col items-center justify-center p-4 sm:p-8 transition-colors">
+            <div className="w-full max-w-6xl h-[85vh] sm:h-[90vh] shadow-2xl rounded-xl overflow-hidden border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 transition-colors">
                 <object
                     data="/resume.pdf"
                     type="application/pdf"
                     className="w-full h-full rounded-xl"
                 >
                     <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
-                        <p className="text-xl font-medium text-gray-700">
+                        <p className="text-xl font-medium text-gray-700 dark:text-zinc-300">
                             It appears your browser doesn't support inline PDFs.
                         </p>
                         <a
@@ -21,8 +21,8 @@ export default function ResumePage() {
                     </div>
                 </object>
             </div>
-            <div className="mt-4 text-sm text-gray-500">
-                <a href="/" className="hover:text-blue-600 transition-colors">
+            <div className="mt-4 text-sm text-gray-500 dark:text-zinc-400">
+                <a href="/" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                     &larr; Back to Home
                 </a>
             </div>
