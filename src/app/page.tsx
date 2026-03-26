@@ -143,6 +143,7 @@ export default function Home() {
         <Canvas
           camera={{ position: [0, 0, 8], fov: 50 }}
           style={{ background: canvasBg, pointerEvents: "auto" }}
+          gl={{ localClippingEnabled: true }}
         >
           <ambientLight intensity={0.8} />
           <pointLight position={[10, 10, 10]} intensity={0.6} />

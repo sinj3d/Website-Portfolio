@@ -14,9 +14,8 @@ const ROTATE_SPEED = (2 * Math.PI) / 30; // 360° per 30s (slow tumble)
 const LINE_THICKNESS = 0.025; // Thicker wireframe
 
 // Phase timing (seconds)
-const SPIN_PHASE = 2;     // pentagon spins in place
-const TILT_END = 4;       // pentagon tilts + moves to bottom face
-const EDGE_DRAW_END = 7;  // edges fully drawn
+const PENT_REVEAL_END = 2; // Plane moves up to reveal pentagon
+const EDGE_DRAW_END = 5;  // edges fully drawn
 const PANEL_DELAY_MS = EDGE_DRAW_END * 1000;
 
 // ─── Helper: read triangle vertex from indexed or non-indexed geometry ───────
@@ -93,10 +92,18 @@ function extractSortedEdges(geo: THREE.BufferGeometry): SortedEdge[] {
     const pos = edges.getAttribute('position');
     const segs: SortedEdge[] = [];
     for (let i = 0; i < pos.count; i += 2) {
-        const ax = pos.getX(i), ay = pos.getY(i), az = pos.getZ(i);
-        const bx = pos.getX(i + 1), by = pos.getY(i + 1), bz = pos.getZ(i + 1);
-        // After tilt R_x(π/2): world_Y = -local_z, so visual bottom = max local z
-        segs.push({ ax, ay, az, bx, by, bz, sortY: -Math.max(az, bz) });
+        let ax = pos.getX(i), ay = pos.getY(i), az = pos.getZ(i);
+        let bx = pos.getX(i + 1), by = pos.getY(i + 1), bz = pos.getZ(i + 1);
+        
+        // Ensure A is visually lower than B (larger local Z)
+        if (bz > az) {
+            const tx = ax, ty = ay, tz = az;
+            ax = bx; ay = by; az = bz;
+            bx = tx; by = ty; bz = tz;
+        }
+
+        // After tilt R_x(π/2): world_Y = -local_z, so visual bottom = max local z (which is now az)
+        segs.push({ ax, ay, az, bx, by, bz, sortY: -az });
     }
     segs.sort((a, b) => a.sortY - b.sortY); // bottom first
     return segs;
@@ -517,14 +524,13 @@ function ProjectDetailsWindow({ face, isDark }: { face: FaceData | null; isDark:
                 </div>
             )}
 
-            <div className={`font-mono text-[13px] min-h-[85px] leading-relaxed p-4 border overflow-hidden rounded-sm ${
-                isFrosted
+            <div className={`font-mono text-[13px] min-h-[85px] leading-relaxed p-4 border overflow-hidden rounded-sm ${isFrosted
                     ? 'text-zinc-400/70 bg-white/30 border-zinc-200/40'
                     : (isDark
                         ? 'text-zinc-300 bg-zinc-800/80 border-zinc-700 shadow-inner'
                         : 'text-zinc-700 bg-zinc-50/80 border-zinc-200 shadow-inner')
-            }`}
-                 style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
+                }`}
+                style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
                 <div style={{ display: 'table-row' }}>
                     <span className={`font-bold select-none ${isFrosted ? 'text-zinc-400/50' : (isDark ? 'text-zinc-500' : 'text-zinc-600')}`} style={{ display: 'table-cell', width: '1.2em', verticalAlign: 'top' }}>&gt;</span>
                     <span style={{ display: 'table-cell', verticalAlign: 'top' }}>
@@ -706,6 +712,7 @@ export default function Dodecahedron() {
     const pentGeo = useMemo(() => createPentagonGeo(), []);
     const pentPoints = useMemo(() => getPentagonPoints(), []);
     const [showPanels, setShowPanels] = useState(false);
+    const clipPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 4), []);
 
     // Sorted edges from aligned geometry
     const sortedEdges = useMemo(() => extractSortedEdges(alignedGeo), [alignedGeo]);
@@ -760,38 +767,15 @@ export default function Dodecahedron() {
 
         const pent = pentGroupRef.current;
 
-        if (elapsed < SPIN_PHASE) {
-            // Phase 0: Pentagon spins in place (facing camera) on Z axis + scales up
-            // Easing for acceleration/deceleration
-            const p = elapsed / SPIN_PHASE;
-            const ease = p * p * (3 - 2 * p);
-            const spinAngle = ease * Math.PI * 4; // 2 full revolutions
-            const scale = p; // Start small (0) -> End full size (1)
-            groupRef.current.quaternion.setFromAxisAngle(axisZ, spinAngle);
-
-            if (pent) {
-                pent.visible = true;
-                pent.scale.setScalar(Math.max(0.01, scale));
-                pent.position.set(0, 0, 0);
-            }
-            if (edgeLinesGroupRef.current) edgeLinesGroupRef.current.visible = false;
-
-            // Update initial pentagon cylinders
-            pentCylindersRef.current.forEach((mesh, i) => {
-                if (mesh) updateCylinder(mesh, pentPoints[i], pentPoints[i + 1]);
-            });
-
-        } else if (elapsed < TILT_END) {
-            // Phase 1: Pentagon tilts + moves from center to bottom face position
-            const progress = (elapsed - SPIN_PHASE) / (TILT_END - SPIN_PHASE);
-            const ease = progress * progress * (3 - 2 * progress); // smoothstep
-            tempQuat.slerpQuaternions(identityQuat, tiltQuat, ease);
-            groupRef.current.quaternion.copy(tempQuat);
-
+        if (elapsed < PENT_REVEAL_END) {
+            // Phase 0: Pentagon reveal with UPWARDS clipping plane
+            groupRef.current.quaternion.copy(tiltQuat);
+            
             if (pent) {
                 pent.visible = true;
                 pent.scale.setScalar(1);
-                pent.position.lerpVectors(originVec, bottomCenter, ease);
+                // Already at bottom face position
+                pent.position.copy(bottomCenter);
             }
             if (edgeLinesGroupRef.current) edgeLinesGroupRef.current.visible = false;
 
@@ -799,13 +783,25 @@ export default function Dodecahedron() {
                 if (mesh) updateCylinder(mesh, pentPoints[i], pentPoints[i + 1]);
             });
 
+            const progress = elapsed / PENT_REVEAL_END;
+            const ease = progress * progress * (3 - 2 * progress); // smoothstep
+            
+            // Limit moves from -3.5 to 0.5 (world Y).
+            // Normal (0, 1, 0), so equation: y > limit is clipped.
+            // constant = -limit
+            const limit = -3.5 + ease * 4; // -3.5 to 0.5
+            clipPlane.constant = -limit;
+
         } else if (elapsed < EDGE_DRAW_END) {
-            // Phase 2: edges draw bottom-to-top from pentagon corners
+            // Phase 1: edges draw bottom-to-top from pentagon corners
             // Keep tilt orientation (no tumble yet)
             groupRef.current.quaternion.copy(tiltQuat);
 
-            const p = (elapsed - TILT_END) / (EDGE_DRAW_END - TILT_END);
+            const p = (elapsed - PENT_REVEAL_END) / (EDGE_DRAW_END - PENT_REVEAL_END);
             const ease = 1 - Math.pow(1 - p, 2); // ease-out quad
+
+            // Maintain fully revealed plane
+            clipPlane.constant = -0.5;
 
             // Pentagon disappears in place at start of edge drawing
             if (pent) {
@@ -831,8 +827,13 @@ export default function Dodecahedron() {
                     if (i < revealCount) {
                         const edgeProgress = Math.min(1, (ease * total - i) / 3);
                         const ep = edgeProgress * edgeProgress;
-                        v1.set(bcx + (seg.ax - bcx) * ep, bcy + (seg.ay - bcy) * ep, bcz + (seg.az - bcz) * ep);
-                        v2.set(bcx + (seg.bx - bcx) * ep, bcy + (seg.by - bcy) * ep, bcz + (seg.bz - bcz) * ep);
+                        // Draw from point A to point B linearly
+                        v1.set(seg.ax, seg.ay, seg.az);
+                        v2.set(
+                            seg.ax + (seg.bx - seg.ax) * ep,
+                            seg.ay + (seg.by - seg.ay) * ep,
+                            seg.az + (seg.bz - seg.az) * ep
+                        );
                         updateCylinder(mesh, v1, v2);
                     } else {
                         mesh.visible = false;
@@ -841,7 +842,7 @@ export default function Dodecahedron() {
             }
 
         } else {
-            // Phase 3+: construction complete, begin slow tumble
+            // Phase 2+: construction complete, begin slow tumble
             if (pent) pent.visible = false;
 
             // Slow tumble starting FROM the tilt orientation
@@ -880,12 +881,12 @@ export default function Dodecahedron() {
             <group ref={pentGroupRef}>
                 <mesh>
                     <primitive object={pentGeo} attach="geometry" />
-                    <meshBasicMaterial color={isDark ? "#18181b" : "#ffffff"} side={THREE.DoubleSide} />
+                    <meshBasicMaterial color={isDark ? "#18181b" : "#ffffff"} side={THREE.DoubleSide} clippingPlanes={[clipPlane]} />
                 </mesh>
                 {pentPoints.slice(0, 5).map((_, i) => (
                     <mesh key={`pedge-${i}`} ref={(el) => { if (el) pentCylindersRef.current[i] = el; }}>
                         <cylinderGeometry args={[LINE_THICKNESS, LINE_THICKNESS, 1, 6]} />
-                        <meshBasicMaterial color={isDark ? "#a1a1aa" : "#000000"} />
+                        <meshBasicMaterial color={isDark ? "#a1a1aa" : "#000000"} clippingPlanes={[clipPlane]} />
                     </mesh>
                 ))}
             </group>
