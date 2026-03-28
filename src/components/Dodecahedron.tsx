@@ -1,9 +1,11 @@
 "use client";
 
 import { useRef, useMemo, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import * as THREE from "three";
 import { useTheme } from "./ThemeProvider";
 
@@ -94,7 +96,7 @@ function extractSortedEdges(geo: THREE.BufferGeometry): SortedEdge[] {
     for (let i = 0; i < pos.count; i += 2) {
         let ax = pos.getX(i), ay = pos.getY(i), az = pos.getZ(i);
         let bx = pos.getX(i + 1), by = pos.getY(i + 1), bz = pos.getZ(i + 1);
-        
+
         // Ensure A is visually lower than B (larger local Z)
         if (bz > az) {
             const tx = ax, ty = ay, tz = az;
@@ -150,7 +152,7 @@ interface FaceData {
     image?: string;
     description: string;
     isFrosted?: boolean;
-    renderContent: (hoverHandlers: { onMouseEnter: () => void, onMouseLeave: () => void }, isDark: boolean) => React.ReactNode;
+    renderContent: (hoverHandlers: { onMouseEnter: () => void, onMouseLeave: () => void, onClick?: (e: React.MouseEvent) => void }, isDark: boolean) => React.ReactNode;
 }
 
 function FaceCard({
@@ -162,6 +164,7 @@ function FaceCard({
     isDark = false,
     onMouseEnter,
     onMouseLeave,
+    onClick,
 }: {
     accent: string;
     slug: string;
@@ -171,6 +174,7 @@ function FaceCard({
     isDark?: boolean;
     onMouseEnter?: () => void;
     onMouseLeave?: () => void;
+    onClick?: (e: React.MouseEvent) => void;
 }) {
     const delay = index * 0.15;
 
@@ -234,13 +238,12 @@ function FaceCard({
         </div>
     );
 
-    // Frosted faces don't link anywhere
     if (frosted) return wrapper;
 
     return (
-        <Link href={`/projects/${slug}`}>
+        <a href={`/projects/${slug}`} onClick={(e) => { e.preventDefault(); onClick?.(e); }}>
             {wrapper}
-        </Link>
+        </a>
     );
 }
 
@@ -251,7 +254,7 @@ const FACE_DEFINITIONS: FaceData[] = [
         label: "Portrait",
         slug: "portrait",
         accent: "rgba(6,182,212,0.6)",
-        image: "/images/portrait/portrait.jpg",
+        image: "/images/portrait/portrait-old.jpg",
         description: "Simon Jin. Robotics, ML, and Software Engineering. Passionate about building intelligent systems.",
         renderContent: (handlers, isDark) => (
             <FaceCard accent="rgba(6,182,212,0.6)" slug="portrait" index={0} isDark={isDark} {...handlers}>
@@ -463,18 +466,29 @@ function TerminalText({ text }: { text: string }) {
     return <span>{text.slice(0, charCount)}</span>;
 }
 
-function ProjectDetailsWindow({ face, isDark }: { face: FaceData | null; isDark: boolean }) {
+function ProjectDetailsWindow({ face, isExpanding, isDark }: { face: FaceData | null; isExpanding: boolean; isDark: boolean }) {
     // Keep track of the last active face so the window elegantly fades out when closing 
     // instead of instantly snapping to empty content.
     const [activeFace, setActiveFace] = useState<FaceData | null>(null);
     const [prevFace, setPrevFace] = useState<FaceData | null>(null);
-
-    const isVisible = face !== null;
+    const [lingerVisible, setLingerVisible] = useState(false);
 
     if (face !== prevFace) {
         setPrevFace(face);
         if (face) setActiveFace(face);
     }
+
+    useEffect(() => {
+        if (!face && !isExpanding) {
+            // Linger for 1.5 seconds after losing focus/unhovering before fading out
+            const timer = setTimeout(() => setLingerVisible(false), 1500);
+            return () => clearTimeout(timer);
+        } else {
+            setLingerVisible(true);
+        }
+    }, [face, isExpanding]);
+
+    const isVisible = face !== null || isExpanding || lingerVisible;
 
     if (!activeFace) return null;
 
@@ -487,30 +501,43 @@ function ProjectDetailsWindow({ face, isDark }: { face: FaceData | null; isDark:
 
     const isFrosted = activeFace.isFrosted;
 
-    const bgColor = isFrosted
+    const baseBgColor = isFrosted
         ? (isDark ? "rgba(20, 20, 25, 0.6)" : "rgba(255, 255, 255, 0.6)")
-        : (isDark ? "rgba(24, 24, 27, 0.95)" : "rgba(255, 255, 255, 0.95)");
-    const borderColor = isFrosted
-        ? (isDark ? "1px solid rgba(60,60,70,0.4)" : "1px solid rgba(200,200,210,0.4)")
-        : (isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(0,0,0,0.15)");
+        : (isDark ? "rgba(24, 24, 27, 1)" : "rgba(255, 255, 255, 1)");
+        
+    const bgColor = isExpanding 
+        ? (isDark ? "rgb(9, 9, 11)" : "rgb(255, 255, 255)") 
+        : baseBgColor;
+
+    const borderColor = isExpanding 
+        ? "transparent"
+        : (isFrosted
+            ? (isDark ? "1px solid rgba(60,60,70,0.4)" : "1px solid rgba(200,200,210,0.4)")
+            : (isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(0,0,0,0.15)"));
 
     return (
         <div
-            className={`w-[400px] p-6 flex flex-col gap-5 z-50 pointer-events-none transition-all duration-300 ease-out`}
+            className={`flex flex-col gap-5 z-50 pointer-events-none transition-all duration-[2000ms] ease-[cubic-bezier(0.25,1,0.5,1)] overflow-hidden ${
+                isExpanding ? "w-[100vw] h-[100vh] mr-0 mb-0 justify-center items-center p-[5vw]" : "w-[400px] mr-[5vw] mb-12 p-6"
+            }`}
             style={{
                 background: bgColor,
                 border: borderColor,
-                boxShadow: isFrosted
-                    ? `0 8px 32px rgba(0,0,0,0.08)`
-                    : `inset 0 0 0 2px ${activeFace.accent.replace(/[\d.]+\)$/g, '0.8)')}, 0 15px 50px rgba(0,0,0,${isDark ? '0.5' : '0.2'})`,
-                backdropFilter: isFrosted ? "blur(20px) saturate(1.2)" : "blur(16px)",
+                boxShadow: isExpanding 
+                    ? "none"
+                    : (isFrosted
+                        ? `0 8px 32px rgba(0,0,0,0.08)`
+                        : `inset 0 0 0 2px ${activeFace.accent.replace(/[\d.]+\)$/g, '0.8)')}, 0 15px 50px rgba(0,0,0,${isDark ? '0.5' : '0.2'})`),
+                backdropFilter: isExpanding ? "none" : (isFrosted ? "blur(20px) saturate(1.2)" : "none"),
                 opacity: finalOpacity,
-                transform: isVisible ? "translateY(0) scale(1) perspective(800px) rotateY(-8deg)" : "translateY(15px) scale(0.95) perspective(800px) rotateY(-8deg)",
+                transform: isVisible 
+                    ? (isExpanding ? "translateY(0) scale(1) perspective(800px) rotateY(0deg)" : "translateY(0) scale(1) perspective(800px) rotateY(-8deg)") 
+                    : "translateY(15px) scale(0.95) perspective(800px) rotateY(-8deg)",
                 transformOrigin: "bottom right",
-                borderRadius: "2px",
+                borderRadius: isExpanding ? "0px" : "2px",
             }}
         >
-            <div className={`flex items-center justify-between pb-3 border-b ${isFrosted ? 'border-zinc-300/40' : (isDark ? 'border-zinc-700' : 'border-zinc-200')}`}>
+            <div className={`flex items-center justify-between pb-3 border-b transition-opacity duration-300 ${isExpanding ? 'opacity-0' : 'opacity-100'} w-full ${isFrosted ? 'border-zinc-300/40' : (isDark ? 'border-zinc-700' : 'border-zinc-200')}`}>
                 <h3 className={`font-bold text-xl ${isFrosted ? 'text-zinc-400' : (isDark ? 'text-zinc-100' : 'text-zinc-900')}`}
                     style={isFrosted ? {} : { color: activeFace.accent.replace(/[\d.]+\)$/g, '1)') }}>
                     {isFrosted ? '🔒 ' : ''}{activeFace.label}
@@ -519,16 +546,16 @@ function ProjectDetailsWindow({ face, isDark }: { face: FaceData | null; isDark:
             </div>
 
             {!isFrosted && activeFace.image && (
-                <div className={`w-full aspect-video overflow-hidden relative shadow-inner rounded-sm ${isDark ? 'bg-zinc-800 border border-zinc-700' : 'bg-zinc-100 border border-zinc-200'}`}>
+                <div className={`w-full aspect-video overflow-hidden relative shadow-inner rounded-sm transition-opacity duration-300 ${isExpanding ? 'opacity-0' : 'opacity-100'} ${isDark ? 'bg-zinc-800 border border-zinc-700' : 'bg-zinc-100 border border-zinc-200'}`}>
                     <img src={activeFace.image} alt={activeFace.label} className="w-full h-full object-cover" />
                 </div>
             )}
 
-            <div className={`font-mono text-[13px] min-h-[85px] leading-relaxed p-4 border overflow-hidden rounded-sm ${isFrosted
-                    ? 'text-zinc-400/70 bg-white/30 border-zinc-200/40'
-                    : (isDark
-                        ? 'text-zinc-300 bg-zinc-800/80 border-zinc-700 shadow-inner'
-                        : 'text-zinc-700 bg-zinc-50/80 border-zinc-200 shadow-inner')
+            <div className={`font-mono text-[13px] min-h-[85px] leading-relaxed p-4 border overflow-hidden rounded-sm transition-opacity duration-300 ${isExpanding ? 'opacity-0' : 'opacity-100'} w-full ${isFrosted
+                ? 'text-zinc-400/70 bg-white/30 border-zinc-200/40'
+                : (isDark
+                    ? 'text-zinc-300 bg-zinc-800/80 border-zinc-700 shadow-inner'
+                    : 'text-zinc-700 bg-zinc-50/80 border-zinc-200 shadow-inner')
                 }`}
                 style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
                 <div style={{ display: 'table-row' }}>
@@ -640,7 +667,7 @@ function computeFaces(geo: THREE.DodecahedronGeometry | THREE.BufferGeometry, al
     });
 }
 
-function FacePanel({ face, onHoverFace, isDark }: { face: ComputedFace, onHoverFace: (face: FaceData | null) => void, isDark: boolean }) {
+function FacePanel({ face, onHoverFace, onClickFace, isDark }: { face: ComputedFace, onHoverFace: (face: FaceData | null) => void, onClickFace: (face: FaceData) => void, isDark: boolean }) {
     const groupRef = useRef<THREE.Group>(null);
     const htmlRef = useRef<HTMLDivElement>(null);
     // Use state instead of ref for visibility to avoid reading ref during render
@@ -681,7 +708,8 @@ function FacePanel({ face, onHoverFace, isDark }: { face: ComputedFace, onHoverF
                 <div ref={htmlRef} style={{ transition: 'opacity 0.4s ease-in-out', pointerEvents: 'auto' }}>
                     {face.data.renderContent({
                         onMouseEnter: () => { if (isFacingFront) onHoverFace(face.data); },
-                        onMouseLeave: () => { if (isFacingFront) onHoverFace(null); }
+                        onMouseLeave: () => { if (isFacingFront) onHoverFace(null); },
+                        onClick: (e: React.MouseEvent) => { if (isFacingFront) onClickFace(face.data); }
                     }, isDark)}
                 </div>
             </Html>
@@ -691,6 +719,7 @@ function FacePanel({ face, onHoverFace, isDark }: { face: ComputedFace, onHoverF
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function Dodecahedron() {
+    const router = useRouter();
     const { theme } = useTheme();
     const isDark = theme === "dark";
 
@@ -700,10 +729,37 @@ export default function Dodecahedron() {
 
     const [hoveredFace, setHoveredFace] = useState<FaceData | null>(null);
     const hoveredFaceRef = useRef<FaceData | null>(null);
+    
+    const [expandingFace, setExpandingFace] = useState<FaceData | null>(() => {
+        if (typeof window !== 'undefined') {
+            const stored = sessionStorage.getItem('expanded_face');
+            if (stored) return FACE_DEFINITIONS.find(f => f.slug === stored) || null;
+            
+            const returning = sessionStorage.getItem('returning_from');
+            if (returning) return FACE_DEFINITIONS.find(f => f.slug === returning) || null;
+        }
+        return null;
+    });
+
+    const [isShrinking, setIsShrinking] = useState(false);
 
     const onHoverFace = (face: FaceData | null) => {
+        if (expandingFace && !isShrinking) return;
+        if (isShrinking && face) return;
         setHoveredFace(face);
         hoveredFaceRef.current = face;
+    };
+
+    const onClickFace = (face: FaceData) => {
+        if (face.isFrosted || expandingFace) return;
+        setExpandingFace(face);
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('start-expansion'));
+            sessionStorage.setItem('expanded_face', face.slug);
+        }
+        setTimeout(() => {
+            router.push(`/projects/${face.slug}`);
+        }, 1950);
     };
 
     // Pre-rotated dodecahedron with one face at -Y
@@ -711,7 +767,12 @@ export default function Dodecahedron() {
     const faces = useMemo(() => computeFaces(alignedGeo, alignQ), [alignedGeo, alignQ]);
     const pentGeo = useMemo(() => createPentagonGeo(), []);
     const pentPoints = useMemo(() => getPentagonPoints(), []);
-    const [showPanels, setShowPanels] = useState(false);
+    const [showPanels, setShowPanels] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return !!sessionStorage.getItem('expanded_face') || !!sessionStorage.getItem('returning_from');
+        }
+        return false;
+    });
     const clipPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 4), []);
 
     // Sorted edges from aligned geometry
@@ -721,7 +782,31 @@ export default function Dodecahedron() {
     const edgeCylindersRef = useRef<THREE.Mesh[]>([]);
     const pentCylindersRef = useRef<THREE.Mesh[]>([]);
 
+    const [returningFace, setReturningFace] = useState<FaceData | null>(null);
+
     useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const stored = sessionStorage.getItem('expanded_face');
+            if (stored) {
+                sessionStorage.removeItem('expanded_face');
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        setExpandingFace(null);
+                        window.dispatchEvent(new Event('end-expansion'));
+                    });
+                });
+                return;
+            }
+
+            const returning = sessionStorage.getItem('returning_from');
+            if (returning) {
+                sessionStorage.removeItem('returning_from');
+                const rFace = FACE_DEFINITIONS.find(f => f.slug === returning) || null;
+                setReturningFace(rFace);
+                window.dispatchEvent(new Event('end-expansion'));
+                return;
+            }
+        }
         const timer = setTimeout(() => setShowPanels(true), PANEL_DELAY_MS);
         return () => clearTimeout(timer);
     }, []);
@@ -748,6 +833,16 @@ export default function Dodecahedron() {
             new THREE.Vector3(0, 0, 1),
             new THREE.Vector3(0, -1, 0)
         ), []);
+
+    const baseQuat = useMemo(() => {
+        if (returningFace) {
+            const face = faces.find(f => f.data.slug === returningFace.slug);
+            if (face) {
+                return face.quaternion.clone().invert();
+            }
+        }
+        return tiltQuat;
+    }, [returningFace, faces, tiltQuat]);
     const identityQuat = useMemo(() => new THREE.Quaternion(), []);
     const tempQuat = useMemo(() => new THREE.Quaternion(), []);
     const tumbleQuat = useMemo(() => new THREE.Quaternion(), []);
@@ -761,16 +856,17 @@ export default function Dodecahedron() {
     const speedRef = useRef(ROTATE_SPEED);
     const tumbleAngleRef = useRef(0);
 
-    useFrame(({ clock }, delta) => {
+    useFrame(({ clock, camera }, delta) => {
         if (!groupRef.current) return;
         const elapsed = clock.getElapsedTime();
 
         const pent = pentGroupRef.current;
+        const skipIntro = !!returningFace;
 
-        if (elapsed < PENT_REVEAL_END) {
+        if (!skipIntro && elapsed < PENT_REVEAL_END) {
             // Phase 0: Pentagon reveal with UPWARDS clipping plane
-            groupRef.current.quaternion.copy(tiltQuat);
-            
+            groupRef.current.quaternion.copy(baseQuat);
+
             if (pent) {
                 pent.visible = true;
                 pent.scale.setScalar(1);
@@ -785,17 +881,17 @@ export default function Dodecahedron() {
 
             const progress = elapsed / PENT_REVEAL_END;
             const ease = progress * progress * (3 - 2 * progress); // smoothstep
-            
+
             // Limit moves from -3.5 to 0.5 (world Y).
             // Normal (0, 1, 0), so equation: y > limit is clipped.
             // constant = -limit
             const limit = -3.5 + ease * 4; // -3.5 to 0.5
             clipPlane.constant = -limit;
 
-        } else if (elapsed < EDGE_DRAW_END) {
+        } else if (!skipIntro && elapsed < EDGE_DRAW_END) {
             // Phase 1: edges draw bottom-to-top from pentagon corners
-            // Keep tilt orientation (no tumble yet)
-            groupRef.current.quaternion.copy(tiltQuat);
+            // Keep base orientation (no tumble yet)
+            groupRef.current.quaternion.copy(baseQuat);
 
             const p = (elapsed - PENT_REVEAL_END) / (EDGE_DRAW_END - PENT_REVEAL_END);
             const ease = 1 - Math.pow(1 - p, 2); // ease-out quad
@@ -845,7 +941,14 @@ export default function Dodecahedron() {
             // Phase 2+: construction complete, begin slow tumble
             if (pent) pent.visible = false;
 
-            // Slow tumble starting FROM the tilt orientation
+            if (skipIntro) {
+                // Zoom out from z=2 to z=8 over 2 seconds
+                const zProgress = Math.min(1, elapsed / 2.0);
+                const easeOutCubic = 1 - Math.pow(1 - zProgress, 3);
+                camera.position.z = 2.0 + (8.0 - 2.0) * easeOutCubic;
+            }
+
+            // Slow tumble starting FROM the base orientation
             const isHovered = hoveredFaceRef.current !== null;
             const targetSpeed = isHovered ? ROTATE_SPEED * 0.15 : ROTATE_SPEED;
             // Frame-independent lerp for smooth transition
@@ -857,7 +960,7 @@ export default function Dodecahedron() {
             qx.setFromAxisAngle(axisX, tumbleT);
             qy.setFromAxisAngle(axisY, -tumbleT);
             tumbleQuat.copy(qx).multiply(qy);
-            tempQuat.copy(tumbleQuat).premultiply(tiltQuat);
+            tempQuat.copy(tumbleQuat).premultiply(baseQuat);
             groupRef.current.quaternion.copy(tempQuat);
 
             // Set all edges to final positions
@@ -875,10 +978,15 @@ export default function Dodecahedron() {
         }
     });
 
+    const overlayPortal = useRef<HTMLElement>(null!);
+    useEffect(() => {
+        overlayPortal.current = document.body;
+    }, []);
+
     return (
         <group ref={groupRef}>
             {/* ── Flat pentagon cylinders (phase 0-1) ── */}
-            <group ref={pentGroupRef}>
+            <group ref={pentGroupRef} visible={!expandingFace}>
                 <mesh>
                     <primitive object={pentGeo} attach="geometry" />
                     <meshBasicMaterial color={isDark ? "#18181b" : "#ffffff"} side={THREE.DoubleSide} clippingPlanes={[clipPlane]} />
@@ -892,7 +1000,7 @@ export default function Dodecahedron() {
             </group>
 
             {/* ── Morphing edges cylinders (phase 2+) ── */}
-            <group ref={edgeLinesGroupRef}>
+            <group ref={edgeLinesGroupRef} visible={!expandingFace}>
                 {sortedEdges.map((_, i) => (
                     <mesh key={`edge-${i}`} ref={(el) => { if (el) edgeCylindersRef.current[i] = el; }}>
                         <cylinderGeometry args={[LINE_THICKNESS, LINE_THICKNESS, 1, 6]} />
@@ -904,16 +1012,14 @@ export default function Dodecahedron() {
             {/* ── Face panels — positioned from aligned geometry ── */}
             {showPanels &&
                 faces.map((face, i) => (
-                    <FacePanel key={`face-${i}`} face={face} onHoverFace={onHoverFace} isDark={isDark} />
+                    <FacePanel key={`face-${i}`} face={face} onHoverFace={onHoverFace} onClickFace={onClickFace} isDark={isDark} />
                 ))}
 
             {/* ── 2D Overlay Window (Shown on hover) ── */}
             {showPanels && (
-                <Html center zIndexRange={[200, 100]}>
-                    <div className="pointer-events-none w-[100vw] h-[100vh] flex items-center justify-end relative z-50">
-                        <div className="mr-[5vw] mb-12">
-                            <ProjectDetailsWindow face={hoveredFace} isDark={isDark} />
-                        </div>
+                <Html center portal={overlayPortal} zIndexRange={[999999, 999998]} style={{ pointerEvents: 'none' }}>
+                    <div className="pointer-events-none w-[100vw] h-[100vh] flex items-center justify-end relative z-[999999] overflow-hidden">
+                        <ProjectDetailsWindow face={expandingFace || hoveredFace} isExpanding={!!expandingFace} isDark={isDark} />
                     </div>
                 </Html>
             )}

@@ -126,15 +126,34 @@ function TerminalText() {
 export default function Home() {
   const { theme } = useTheme();
   const canvasBg = theme === "dark" ? "#0a0a0a" : "#ffffff";
+  const [isExpanding, setIsExpanding] = useState(() => {
+      if (typeof window !== 'undefined') {
+          return !!sessionStorage.getItem('expanded_face') || !!sessionStorage.getItem('returning_from');
+      }
+      return false;
+  });
+
+  useEffect(() => {
+      const handleExpand = () => setIsExpanding(true);
+      const handleEnd = () => setIsExpanding(false);
+      window.addEventListener('start-expansion', handleExpand);
+      window.addEventListener('end-expansion', handleEnd);
+      return () => {
+          window.removeEventListener('start-expansion', handleExpand);
+          window.removeEventListener('end-expansion', handleEnd);
+      };
+  }, []);
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-white dark:bg-zinc-950">
 
       {/* Theme toggle */}
-      <ThemeToggle />
+      <div className={`transition-opacity duration-1000 ${isExpanding ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+        <ThemeToggle />
+      </div>
 
       {/* Left-side terminal text */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-[200] flex w-[40%] flex-col justify-center px-12">
+      <div className={`pointer-events-none absolute inset-y-0 left-0 z-[200] flex w-[40%] flex-col justify-center px-12 transition-opacity duration-1000 ease-in-out ${isExpanding ? 'opacity-0' : 'opacity-100'}`}>
         <TerminalText />
       </div>
 
