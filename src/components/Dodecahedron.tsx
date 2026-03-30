@@ -15,10 +15,7 @@ const phi = (1 + Math.sqrt(5)) / 2;
 const ROTATE_SPEED = (2 * Math.PI) / 30; // 360° per 30s (slow tumble)
 const LINE_THICKNESS = 0.025; // Thicker wireframe
 
-// Phase timing (seconds)
-const PENT_REVEAL_END = 2; // Plane moves up to reveal pentagon
-const EDGE_DRAW_END = 5;  // edges fully drawn
-const PANEL_DELAY_MS = EDGE_DRAW_END * 1000;
+
 
 // ─── Helper: read triangle vertex from indexed or non-indexed geometry ───────
 function getTriVert(
@@ -152,7 +149,7 @@ interface FaceData {
     image?: string;
     description: string;
     isFrosted?: boolean;
-    renderContent: (hoverHandlers: { onMouseEnter: () => void, onMouseLeave: () => void, onClick?: (e: React.MouseEvent) => void }, isDark: boolean) => React.ReactNode;
+    renderContent: (hoverHandlers: { onMouseEnter: () => void, onMouseLeave: () => void, onClick?: (e: React.MouseEvent) => void }, isDark: boolean, isReturning: boolean) => React.ReactNode;
 }
 
 function FaceCard({
@@ -165,6 +162,7 @@ function FaceCard({
     onMouseEnter,
     onMouseLeave,
     onClick,
+    isReturning = false,
 }: {
     accent: string;
     slug: string;
@@ -175,8 +173,10 @@ function FaceCard({
     onMouseEnter?: () => void;
     onMouseLeave?: () => void;
     onClick?: (e: React.MouseEvent) => void;
+    isReturning?: boolean;
 }) {
-    const delay = index * 0.15;
+    const delay = isReturning ? index * 0.05 : index * 0.15;
+    const duration = isReturning ? "0.2s" : "0.6s";
 
     // Points corresponding exactly to PENTAGON_CLIP
     // (50% 0%, 97.55% 34.55%, 79.39% 90.45%, 20.61% 90.45%, 2.45% 34.55%)
@@ -187,11 +187,12 @@ function FaceCard({
         <div
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
-            className="animate-line relative cursor-pointer transition-transform hover:scale-105 block"
+            className="animate-line relative cursor-pointer group transition-all duration-300 hover:scale-[1.05] block"
             style={{
                 width: "205px",
                 height: "205px",
                 clipPath: PENTAGON_CLIP,
+                animationDuration: duration,
                 animationDelay: `${delay}s`,
             }}
         >
@@ -256,8 +257,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(6,182,212,0.6)",
         image: "/images/portrait/portrait-old.jpg",
         description: "Simon Jin. Robotics, ML, and Software Engineering. Passionate about building intelligent systems.",
-        renderContent: (handlers, isDark) => (
-            <FaceCard accent="rgba(6,182,212,0.6)" slug="portrait" index={0} isDark={isDark} {...handlers}>
+        renderContent: (handlers, isDark, isReturning) => (
+            <FaceCard accent="rgba(6,182,212,0.6)" slug="portrait" index={0} isDark={isDark} isReturning={isReturning} {...handlers}>
                 <div className="relative w-16 h-16 group mb-1">
                     <img src="/images/portrait/SJ.png" alt="Portrait" className="absolute inset-0 w-full h-full object-contain" />
                     <img src="/images/portrait/SJ.png" alt="Portrait" className="absolute inset-0 w-full h-full object-contain opacity-0 group-hover:opacity-70 group-hover:translate-x-[2px] group-hover:-translate-y-[1px] transition-all duration-100 mix-blend-screen" style={{ filter: 'hue-rotate(90deg) saturate(200%) blur(0.5px)' }} />
@@ -278,8 +279,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(160,160,180,0.3)",
         description: "This project is currently under development. Check back soon for updates.",
         isFrosted: true,
-        renderContent: (handlers, isDark) => (
-            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-5" index={1} frosted isDark={isDark} {...handlers}>
+        renderContent: (handlers, isDark, isReturning) => (
+            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-5" index={1} frosted isDark={isDark} isReturning={isReturning} {...handlers}>
                 <div className="animate-shimmer absolute inset-0 pointer-events-none" />
             </FaceCard>
         ),
@@ -292,8 +293,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(245,158,11,0.5)",
         image: "/images/hardhaq/circuit.png",
         description: "1st Place winner at HardHaQ 2025, a quantum hardware hackathon hosted by the North American Quantum Consortium. ",
-        renderContent: (handlers, isDark) => (
-            <FaceCard accent="rgba(245,158,11,0.5)" slug="hardhaq" index={2} isDark={isDark} {...handlers}>
+        renderContent: (handlers, isDark, isReturning) => (
+            <FaceCard accent="rgba(245,158,11,0.5)" slug="hardhaq" index={2} isDark={isDark} isReturning={isReturning} {...handlers}>
                 <img src="/images/hardhaq/nasc.png" alt="HardHaQ" className="w-15 h-15 rounded-full" />
                 <span className="text-[8px] font-bold tracking-widest text-amber-600 uppercase">🏆 1st Place</span>
                 <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">HardHaQ 2025</h3>
@@ -309,8 +310,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(16,185,129,0.5)",
         image: "/images/macropad/switch.png",
         description: "Engineered a custom hall-effect macropad from scratch, featuring a custom KiCad PCB and embedded firmware.",
-        renderContent: (handlers, isDark) => (
-            <FaceCard accent="rgba(16,185,129,0.5)" slug="macropad" index={3} isDark={isDark} {...handlers}>
+        renderContent: (handlers, isDark, isReturning) => (
+            <FaceCard accent="rgba(16,185,129,0.5)" slug="macropad" index={3} isDark={isDark} isReturning={isReturning} {...handlers}>
                 <img src="/images/macropad/macropad.png" style={{ width: '100%', height: '75px', objectFit: 'contain' }} />
                 <span className="text-[8px] font-bold tracking-widest text-emerald-600 uppercase">Hardware</span>
                 <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">Custom Macropad</h3>
@@ -326,8 +327,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(160,160,180,0.3)",
         description: "This project is currently under development. Check back soon for updates.",
         isFrosted: true,
-        renderContent: (handlers, isDark) => (
-            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-1" index={4} frosted isDark={isDark} {...handlers}>
+        renderContent: (handlers, isDark, isReturning) => (
+            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-1" index={4} frosted isDark={isDark} isReturning={isReturning} {...handlers}>
                 <div className="animate-shimmer absolute inset-0 pointer-events-none" />
             </FaceCard>
         ),
@@ -340,8 +341,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(96, 34, 44, 0.5)",
         image: "/images/parabellum/booth.jpg",
         description: "Served as 3-year captain for FTC Parabellum. Led the team to compete in the European Internationals and mentored junior members.",
-        renderContent: (handlers, isDark) => (
-            <FaceCard accent="rgba(96, 34, 44, 0.5)" slug="parabellum" index={5} isDark={isDark} {...handlers}>
+        renderContent: (handlers, isDark, isReturning) => (
+            <FaceCard accent="rgba(96, 34, 44, 0.5)" slug="parabellum" index={5} isDark={isDark} isReturning={isReturning} {...handlers}>
                 <img src="/images/parabellum/logo.svg" alt="Parabellum Logo" className="w-20 h-20" />
                 <span className="text-[8px] font-bold tracking-widest text-rose-600 uppercase">Parabellum</span>
                 <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">FTC Parabellum</h3>
@@ -357,8 +358,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(59,130,246,0.5)",
         image: "/images/hudson/gallery.jpg",
         description: "Software project built at nwHacks. Integrated ElevenLabs API for advanced text-to-speech functionality in a head-up display system.",
-        renderContent: (handlers, isDark) => (
-            <FaceCard accent="rgba(59,130,246,0.5)" slug="hudson" index={6} isDark={isDark} {...handlers}>
+        renderContent: (handlers, isDark, isReturning) => (
+            <FaceCard accent="rgba(59,130,246,0.5)" slug="hudson" index={6} isDark={isDark} isReturning={isReturning} {...handlers}>
                 <img src="/images/hudson/logo.jpg" alt="HUDson" className="w-15 h-15" />
                 <span className="text-[8px] font-bold tracking-widest text-blue-600 uppercase">Software</span>
                 <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">HUDson</h3>
@@ -374,8 +375,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(20,184,166,0.5)",
         image: "/images/telebuddy/telebuddy.jpg",
         description: "A 6-DOF teleoperated robotic arm specifically designed for precision soldering tasks. Won Science Tech for Social Good at Hack the Coast.",
-        renderContent: (handlers, isDark) => (
-            <FaceCard accent="rgba(20,184,166,0.5)" slug="telebuddy" index={7} isDark={isDark} {...handlers}>
+        renderContent: (handlers, isDark, isReturning) => (
+            <FaceCard accent="rgba(20,184,166,0.5)" slug="telebuddy" index={7} isDark={isDark} isReturning={isReturning} {...handlers}>
                 <img src="/images/telebuddy/hackthecoast.png" alt="Telebuddy" className="w-10 h-10" />
                 <span className="text-[8px] font-bold tracking-widest text-teal-600 uppercase">Mechatronics</span>
                 <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">Telebuddy</h3>
@@ -391,8 +392,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(160,160,180,0.3)",
         description: "This project is currently under development. Check back soon for updates.",
         isFrosted: true,
-        renderContent: (handlers, isDark) => (
-            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-2" index={8} frosted isDark={isDark} {...handlers}>
+        renderContent: (handlers, isDark, isReturning) => (
+            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-2" index={8} frosted isDark={isDark} isReturning={isReturning} {...handlers}>
                 <div className="animate-shimmer absolute inset-0 pointer-events-none" />
             </FaceCard>
         ),
@@ -405,8 +406,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(16,185,129,0.5)",
         image: "/images/resume-builder/preview.png",
         description: "A local-first AI resume builder powered by a local LLM (llama.cpp). Generates tailored LaTeX resumes from structured experience data, with live editor and Tauri-native PDF export.",
-        renderContent: (handlers, isDark) => (
-            <FaceCard accent="rgba(16,185,129,0.5)" slug="resume-builder" index={9} isDark={isDark} {...handlers}>
+        renderContent: (handlers, isDark, isReturning) => (
+            <FaceCard accent="rgba(16,185,129,0.5)" slug="resume-builder" index={9} isDark={isDark} isReturning={isReturning} {...handlers}>
                 <span className="text-[8px] font-bold tracking-widest text-emerald-600 uppercase">Dev Tool</span>
                 <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">Resume Builder</h3>
                 <p className="text-[9px] text-zinc-500 dark:text-zinc-400">Local LLM · LaTeX · Tauri</p>
@@ -421,8 +422,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(160,160,180,0.3)",
         description: "This project is currently under development. Check back soon for updates.",
         isFrosted: true,
-        renderContent: (handlers, isDark) => (
-            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-3" index={10} frosted isDark={isDark} {...handlers}>
+        renderContent: (handlers, isDark, isReturning) => (
+            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-3" index={10} frosted isDark={isDark} isReturning={isReturning} {...handlers}>
                 <div className="animate-shimmer absolute inset-0 pointer-events-none" />
             </FaceCard>
         ),
@@ -435,8 +436,8 @@ const FACE_DEFINITIONS: FaceData[] = [
         accent: "rgba(160,160,180,0.3)",
         description: "This project is currently under development. Check back soon for updates.",
         isFrosted: true,
-        renderContent: (handlers, isDark) => (
-            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-4" index={11} frosted isDark={isDark} {...handlers}>
+        renderContent: (handlers, isDark, isReturning) => (
+            <FaceCard accent="rgba(160,160,180,0.3)" slug="placeholder-4" index={11} frosted isDark={isDark} isReturning={isReturning} {...handlers}>
                 <div className="animate-shimmer absolute inset-0 pointer-events-none" />
             </FaceCard>
         ),
@@ -444,9 +445,10 @@ const FACE_DEFINITIONS: FaceData[] = [
 ];
 
 // ─── Popup Window Components ──────────────────────────────────────────────────
-function TerminalText({ text }: { text: string }) {
+function TerminalText({ text, isReturning = false }: { text: string; isReturning?: boolean }) {
     const [charCount, setCharCount] = useState(0);
     const countRef = useRef(0);
+    const speed = isReturning ? 15 : 30;
 
     useEffect(() => {
         setCharCount(0);
@@ -459,14 +461,14 @@ function TerminalText({ text }: { text: string }) {
             } else {
                 setCharCount(countRef.current);
             }
-        }, 30);
+        }, speed);
         return () => clearInterval(interval);
-    }, [text]);
+    }, [text, speed]);
 
     return <span>{text.slice(0, charCount)}</span>;
 }
 
-function ProjectDetailsWindow({ face, isExpanding, isDark }: { face: FaceData | null; isExpanding: boolean; isDark: boolean }) {
+function ProjectDetailsWindow({ face, isExpanding, isDark, isReturning }: { face: FaceData | null; isExpanding: boolean; isDark: boolean; isReturning: boolean }) {
     // Keep track of the last active face so the window elegantly fades out when closing 
     // instead of instantly snapping to empty content.
     const [activeFace, setActiveFace] = useState<FaceData | null>(null);
@@ -561,7 +563,7 @@ function ProjectDetailsWindow({ face, isExpanding, isDark }: { face: FaceData | 
                 <div style={{ display: 'table-row' }}>
                     <span className={`font-bold select-none ${isFrosted ? 'text-zinc-400/50' : (isDark ? 'text-zinc-500' : 'text-zinc-600')}`} style={{ display: 'table-cell', width: '1.2em', verticalAlign: 'top' }}>&gt;</span>
                     <span style={{ display: 'table-cell', verticalAlign: 'top' }}>
-                        <TerminalText text={activeFace.description} />
+                        <TerminalText text={activeFace.description} isReturning={isReturning} />
                         <span className={`animate-pulse inline-block w-2 h-4 ml-1.5 align-middle ${isFrosted ? 'bg-zinc-300/50' : (isDark ? 'bg-zinc-500' : 'bg-zinc-400')}`}></span>
                     </span>
                 </div>
@@ -667,7 +669,7 @@ function computeFaces(geo: THREE.DodecahedronGeometry | THREE.BufferGeometry, al
     });
 }
 
-function FacePanel({ face, onHoverFace, onClickFace, isDark }: { face: ComputedFace, onHoverFace: (face: FaceData | null) => void, onClickFace: (face: FaceData) => void, isDark: boolean }) {
+function FacePanel({ face, onHoverFace, onClickFace, isDark, isReturning }: { face: ComputedFace, onHoverFace: (face: FaceData | null) => void, onClickFace: (face: FaceData) => void, isDark: boolean, isReturning: boolean }) {
     const groupRef = useRef<THREE.Group>(null);
     const htmlRef = useRef<HTMLDivElement>(null);
     // Use state instead of ref for visibility to avoid reading ref during render
@@ -710,7 +712,7 @@ function FacePanel({ face, onHoverFace, onClickFace, isDark }: { face: ComputedF
                         onMouseEnter: () => { if (isFacingFront) onHoverFace(face.data); },
                         onMouseLeave: () => { if (isFacingFront) onHoverFace(null); },
                         onClick: (e: React.MouseEvent) => { if (isFacingFront) onClickFace(face.data); }
-                    }, isDark)}
+                    }, isDark, isReturning)}
                 </div>
             </Html>
         </group>
@@ -718,7 +720,11 @@ function FacePanel({ face, onHoverFace, onClickFace, isDark }: { face: ComputedF
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function Dodecahedron() {
+export default function Dodecahedron({ isReturning = false }: { isReturning?: boolean }) {
+    const PENT_REVEAL_END = isReturning ? 1 : 2;
+    const EDGE_DRAW_END = isReturning ? 2.5 : 5;
+    const PANEL_DELAY_MS = EDGE_DRAW_END * 1000;
+
     const router = useRouter();
     const { theme } = useTheme();
     const isDark = theme === "dark";
@@ -730,22 +736,10 @@ export default function Dodecahedron() {
     const [hoveredFace, setHoveredFace] = useState<FaceData | null>(null);
     const hoveredFaceRef = useRef<FaceData | null>(null);
     
-    const [expandingFace, setExpandingFace] = useState<FaceData | null>(() => {
-        if (typeof window !== 'undefined') {
-            const stored = sessionStorage.getItem('expanded_face');
-            if (stored) return FACE_DEFINITIONS.find(f => f.slug === stored) || null;
-            
-            const returning = sessionStorage.getItem('returning_from');
-            if (returning) return FACE_DEFINITIONS.find(f => f.slug === returning) || null;
-        }
-        return null;
-    });
-
-    const [isShrinking, setIsShrinking] = useState(false);
+    const [expandingFace, setExpandingFace] = useState<FaceData | null>(null);
 
     const onHoverFace = (face: FaceData | null) => {
-        if (expandingFace && !isShrinking) return;
-        if (isShrinking && face) return;
+        if (expandingFace) return;
         setHoveredFace(face);
         hoveredFaceRef.current = face;
     };
@@ -755,7 +749,6 @@ export default function Dodecahedron() {
         setExpandingFace(face);
         if (typeof window !== 'undefined') {
             window.dispatchEvent(new Event('start-expansion'));
-            sessionStorage.setItem('expanded_face', face.slug);
         }
         setTimeout(() => {
             router.push(`/projects/${face.slug}`);
@@ -767,12 +760,7 @@ export default function Dodecahedron() {
     const faces = useMemo(() => computeFaces(alignedGeo, alignQ), [alignedGeo, alignQ]);
     const pentGeo = useMemo(() => createPentagonGeo(), []);
     const pentPoints = useMemo(() => getPentagonPoints(), []);
-    const [showPanels, setShowPanels] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return !!sessionStorage.getItem('expanded_face') || !!sessionStorage.getItem('returning_from');
-        }
-        return false;
-    });
+    const [showPanels, setShowPanels] = useState(false);
     const clipPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 4), []);
 
     // Sorted edges from aligned geometry
@@ -782,31 +770,7 @@ export default function Dodecahedron() {
     const edgeCylindersRef = useRef<THREE.Mesh[]>([]);
     const pentCylindersRef = useRef<THREE.Mesh[]>([]);
 
-    const [returningFace, setReturningFace] = useState<FaceData | null>(null);
-
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const stored = sessionStorage.getItem('expanded_face');
-            if (stored) {
-                sessionStorage.removeItem('expanded_face');
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        setExpandingFace(null);
-                        window.dispatchEvent(new Event('end-expansion'));
-                    });
-                });
-                return;
-            }
-
-            const returning = sessionStorage.getItem('returning_from');
-            if (returning) {
-                sessionStorage.removeItem('returning_from');
-                const rFace = FACE_DEFINITIONS.find(f => f.slug === returning) || null;
-                setReturningFace(rFace);
-                window.dispatchEvent(new Event('end-expansion'));
-                return;
-            }
-        }
         const timer = setTimeout(() => setShowPanels(true), PANEL_DELAY_MS);
         return () => clearTimeout(timer);
     }, []);
@@ -834,15 +798,7 @@ export default function Dodecahedron() {
             new THREE.Vector3(0, -1, 0)
         ), []);
 
-    const baseQuat = useMemo(() => {
-        if (returningFace) {
-            const face = faces.find(f => f.data.slug === returningFace.slug);
-            if (face) {
-                return face.quaternion.clone().invert();
-            }
-        }
-        return tiltQuat;
-    }, [returningFace, faces, tiltQuat]);
+
     const identityQuat = useMemo(() => new THREE.Quaternion(), []);
     const tempQuat = useMemo(() => new THREE.Quaternion(), []);
     const tumbleQuat = useMemo(() => new THREE.Quaternion(), []);
@@ -861,11 +817,10 @@ export default function Dodecahedron() {
         const elapsed = clock.getElapsedTime();
 
         const pent = pentGroupRef.current;
-        const skipIntro = !!returningFace;
 
-        if (!skipIntro && elapsed < PENT_REVEAL_END) {
+        if (elapsed < PENT_REVEAL_END) {
             // Phase 0: Pentagon reveal with UPWARDS clipping plane
-            groupRef.current.quaternion.copy(baseQuat);
+            groupRef.current.quaternion.copy(tiltQuat);
 
             if (pent) {
                 pent.visible = true;
@@ -888,10 +843,10 @@ export default function Dodecahedron() {
             const limit = -3.5 + ease * 4; // -3.5 to 0.5
             clipPlane.constant = -limit;
 
-        } else if (!skipIntro && elapsed < EDGE_DRAW_END) {
+        } else if (elapsed < EDGE_DRAW_END) {
             // Phase 1: edges draw bottom-to-top from pentagon corners
             // Keep base orientation (no tumble yet)
-            groupRef.current.quaternion.copy(baseQuat);
+            groupRef.current.quaternion.copy(tiltQuat);
 
             const p = (elapsed - PENT_REVEAL_END) / (EDGE_DRAW_END - PENT_REVEAL_END);
             const ease = 1 - Math.pow(1 - p, 2); // ease-out quad
@@ -941,13 +896,6 @@ export default function Dodecahedron() {
             // Phase 2+: construction complete, begin slow tumble
             if (pent) pent.visible = false;
 
-            if (skipIntro) {
-                // Zoom out from z=2 to z=8 over 2 seconds
-                const zProgress = Math.min(1, elapsed / 2.0);
-                const easeOutCubic = 1 - Math.pow(1 - zProgress, 3);
-                camera.position.z = 2.0 + (8.0 - 2.0) * easeOutCubic;
-            }
-
             // Slow tumble starting FROM the base orientation
             const isHovered = hoveredFaceRef.current !== null;
             const targetSpeed = isHovered ? ROTATE_SPEED * 0.15 : ROTATE_SPEED;
@@ -960,7 +908,7 @@ export default function Dodecahedron() {
             qx.setFromAxisAngle(axisX, tumbleT);
             qy.setFromAxisAngle(axisY, -tumbleT);
             tumbleQuat.copy(qx).multiply(qy);
-            tempQuat.copy(tumbleQuat).premultiply(baseQuat);
+            tempQuat.copy(tumbleQuat).premultiply(tiltQuat);
             groupRef.current.quaternion.copy(tempQuat);
 
             // Set all edges to final positions
@@ -1012,14 +960,14 @@ export default function Dodecahedron() {
             {/* ── Face panels — positioned from aligned geometry ── */}
             {showPanels &&
                 faces.map((face, i) => (
-                    <FacePanel key={`face-${i}`} face={face} onHoverFace={onHoverFace} onClickFace={onClickFace} isDark={isDark} />
+                    <FacePanel key={`face-${i}`} face={face} onHoverFace={onHoverFace} onClickFace={onClickFace} isDark={isDark} isReturning={isReturning} />
                 ))}
 
             {/* ── 2D Overlay Window (Shown on hover) ── */}
             {showPanels && (
                 <Html center portal={overlayPortal} zIndexRange={[999999, 999998]} style={{ pointerEvents: 'none' }}>
                     <div className="pointer-events-none w-[100vw] h-[100vh] flex items-center justify-end relative z-[999999] overflow-hidden">
-                        <ProjectDetailsWindow face={expandingFace || hoveredFace} isExpanding={!!expandingFace} isDark={isDark} />
+                        <ProjectDetailsWindow face={expandingFace || hoveredFace} isExpanding={!!expandingFace} isDark={isDark} isReturning={isReturning} />
                     </div>
                 </Html>
             )}

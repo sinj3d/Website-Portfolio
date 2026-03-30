@@ -40,10 +40,11 @@ function buildCharMap() {
 }
 
 const CHAR_MAP = buildCharMap();
-const CHAR_SPEED_MS = 20; // ms per character
-const FIRST_LINE_DELAY = 2000;
 
-function TerminalText() {
+function TerminalText({ isReturning }: { isReturning: boolean }) {
+  const charSpeed = isReturning ? 3 : 20;
+  const firstLineDelay = isReturning ? 100 : 2000;
+  
   const [revealedCount, setRevealedCount] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -57,8 +58,8 @@ function TerminalText() {
           }
           return prev + 1;
         });
-      }, CHAR_SPEED_MS);
-    }, FIRST_LINE_DELAY);
+      }, charSpeed);
+    }, firstLineDelay);
 
     return () => {
       clearTimeout(startTimer);
@@ -126,22 +127,26 @@ function TerminalText() {
 export default function Home() {
   const { theme } = useTheme();
   const canvasBg = theme === "dark" ? "#0a0a0a" : "#ffffff";
-  const [isExpanding, setIsExpanding] = useState(() => {
-      if (typeof window !== 'undefined') {
-          return !!sessionStorage.getItem('expanded_face') || !!sessionStorage.getItem('returning_from');
-      }
-      return false;
-  });
+  const [isExpanding, setIsExpanding] = useState(false);
+  const [isReturning, setIsReturning] = useState(false);
 
   useEffect(() => {
-      const handleExpand = () => setIsExpanding(true);
-      const handleEnd = () => setIsExpanding(false);
-      window.addEventListener('start-expansion', handleExpand);
-      window.addEventListener('end-expansion', handleEnd);
-      return () => {
-          window.removeEventListener('start-expansion', handleExpand);
-          window.removeEventListener('end-expansion', handleEnd);
-      };
+    // Check if user has visited before in this session
+    const hasVisited = sessionStorage.getItem("portfolio_visited");
+    if (hasVisited) {
+      setIsReturning(true);
+    }
+    // Set flag for future visits
+    sessionStorage.setItem("portfolio_visited", "true");
+
+    const handleExpand = () => setIsExpanding(true);
+    const handleEnd = () => setIsExpanding(false);
+    window.addEventListener('start-expansion', handleExpand);
+    window.addEventListener('end-expansion', handleEnd);
+    return () => {
+        window.removeEventListener('start-expansion', handleExpand);
+        window.removeEventListener('end-expansion', handleEnd);
+    };
   }, []);
 
   return (
@@ -154,7 +159,7 @@ export default function Home() {
 
       {/* Left-side terminal text */}
       <div className={`pointer-events-none absolute inset-y-0 left-0 z-[200] flex w-[40%] flex-col justify-center px-12 transition-opacity duration-1000 ease-in-out ${isExpanding ? 'opacity-0' : 'opacity-100'}`}>
-        <TerminalText />
+        <TerminalText isReturning={isReturning} />
       </div>
 
       {/* 3D Canvas */}
@@ -166,7 +171,7 @@ export default function Home() {
         >
           <ambientLight intensity={0.8} />
           <pointLight position={[10, 10, 10]} intensity={0.6} />
-          <Dodecahedron />
+          <Dodecahedron isReturning={isReturning} />
           <OrbitControls
             enableZoom={false}
             enablePan={false}

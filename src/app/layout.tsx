@@ -13,6 +13,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import PageTransition from "@/components/PageTransition";
+
 export const metadata: Metadata = {
   title: "Simon Shenghua Jin — Portfolio",
   description: "Interactive 3D portfolio showcasing robotics, ML, and software engineering projects.",
@@ -33,11 +35,13 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen w-screen overflow-hidden`}
         suppressHydrationWarning
       >
         <ThemeProvider>
-          {children}
+          <PageTransition>
+            {children}
+          </PageTransition>
         </ThemeProvider>
       </body>
     </html>
