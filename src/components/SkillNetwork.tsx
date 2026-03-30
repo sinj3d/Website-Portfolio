@@ -5,40 +5,31 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
 
-export type SkillNode = { pos: THREE.Vector3; label: string };
-
-function generateNodes(labels: string[], center: [number, number, number], spread: number): SkillNode[] {
-    const nodes: SkillNode[] = [];
-    for (let i = 0; i < labels.length; i++) {
-        const u = Math.random();
-        const v = Math.random();
-        const theta = 2 * Math.PI * u;
-        const phi = Math.acos(2 * v - 1);
+function generateNodes(count: number, center: [number, number, number], spread: number) {
+    const nodes = [];
+    for (let i = 0; i < count; i++) {
+        // Flattened completely into the Z=0 plane (XY plane circle)
+        const angle = Math.random() * Math.PI * 2;
         const radius = Math.random() * spread;
-        
-        nodes.push({
-            pos: new THREE.Vector3(
-                center[0] + radius * Math.sin(phi) * Math.cos(theta),
-                center[1] + radius * Math.sin(phi) * Math.sin(theta),
-                center[2] + radius * Math.cos(phi)
-            ),
-            label: labels[i]
-        });
+        nodes.push(new THREE.Vector3(
+            center[0] + Math.cos(angle) * radius,
+            center[1] + Math.sin(angle) * radius,
+            center[2] // keeping whatever z center was assigned
+        ));
     }
     return nodes;
 }
 
-function AnimatedCluster({ initialNodes, color, label, labelPos }: { initialNodes: SkillNode[], color: string, label: string, labelPos: [number, number, number] }) {
+function AnimatedCluster({ initialNodes, color, label, labelPos }: { initialNodes: THREE.Vector3[], color: string, label: string, labelPos: [number, number, number] }) {
     const instancedMeshRef = useRef<THREE.InstancedMesh>(null);
     const linesRef = useRef<THREE.LineSegments>(null);
-    const textRefs = useRef<(THREE.Group | null)[]>([]);
 
     // Build line segments indices based on distance
     const indices = useMemo(() => {
         const arr = [];
         for (let i = 0; i < initialNodes.length; i++) {
             for (let j = i + 1; j < initialNodes.length; j++) {
-                if (initialNodes[i].pos.distanceTo(initialNodes[j].pos) < 2.5) {
+                if (initialNodes[i].distanceTo(initialNodes[j]) < 2.5) {
                     arr.push(i, j);
                 }
             }
@@ -49,10 +40,10 @@ function AnimatedCluster({ initialNodes, color, label, labelPos }: { initialNode
     // Initial dummy array for positions
     const posArray = useMemo(() => {
         const arr = new Float32Array(initialNodes.length * 3);
-        initialNodes.forEach((node, i) => {
-            arr[i * 3] = node.pos.x;
-            arr[i * 3 + 1] = node.pos.y;
-            arr[i * 3 + 2] = node.pos.z;
+        initialNodes.forEach((v, i) => {
+            arr[i * 3] = v.x;
+            arr[i * 3 + 1] = v.y;
+            arr[i * 3 + 2] = v.z;
         });
         return arr;
     }, [initialNodes]);
@@ -77,7 +68,7 @@ function AnimatedCluster({ initialNodes, color, label, labelPos }: { initialNode
         
         for (let i = 0; i < initialNodes.length; i++) {
             const p = driftParams[i];
-            const base = initialNodes[i].pos;
+            const base = initialNodes[i];
             
             // Apply drift
             const dx = Math.sin(t * p.speedX + p.offsetX) * 0.15;
@@ -96,12 +87,6 @@ function AnimatedCluster({ initialNodes, color, label, labelPos }: { initialNode
             linePos[i * 3] = newX;
             linePos[i * 3 + 1] = newY;
             linePos[i * 3 + 2] = newZ;
-
-            // Sync text label position
-            const textRef = textRefs.current[i];
-            if (textRef) {
-                textRef.position.set(newX + 0.12, newY + 0.12, newZ);
-            }
         }
         
         instancedMeshRef.current.instanceMatrix.needsUpdate = true;
@@ -123,25 +108,10 @@ function AnimatedCluster({ initialNodes, color, label, labelPos }: { initialNode
             </Text>
             
             <instancedMesh ref={instancedMeshRef} args={[undefined, undefined, initialNodes.length]}>
-                <sphereGeometry args={[0.1, 16, 16]} />
+                <sphereGeometry args={[0.08, 16, 16]} />
                 <meshStandardMaterial color={color} roughness={0.2} metalness={0.1} transparent opacity={0.9} />
             </instancedMesh>
             
-            {initialNodes.map((node, i) => (
-                <Text 
-                    key={i}
-                    ref={(el) => { textRefs.current[i] = el as any; }}
-                    position={[node.pos.x + 0.2, node.pos.y + 0.15, node.pos.z]}
-                    fontSize={0.2} 
-                    color={color}
-                    anchorX="left"
-                    anchorY="middle"
-                    fillOpacity={0.85}
-                >
-                    {node.label}
-                </Text>
-            ))}
-
             <lineSegments ref={linesRef}>
                 <bufferGeometry>
                     <bufferAttribute attach="attributes-position" args={[new Float32Array(posArray), 3]} />
@@ -154,23 +124,19 @@ function AnimatedCluster({ initialNodes, color, label, labelPos }: { initialNode
 }
 
 export default function SkillNetwork() {
-    const hwLabels = ["C++", "ROS", "KiCad", "PCB Design", "3D Printing", "Hall-Effect Sensors", "Microcontrollers", "Firmware"];
-    const swLabels = ["Next.js", "React", "Tailwind CSS", "TypeScript", "Python", "Docker", "Three.js", "Node.js"];
-    const mlLabels = ["PyTorch", "Model Optimization", "K-Fold CV", "Quant Analysis", "Pandas", "NumPy", "Scikit-Learn"];
-
-    // Generate clusters with 3D nodes but centers on same Z=0 plane, brought closer together vertically
-    const HARDWARE = useMemo(() => generateNodes(hwLabels, [0, 2.5, 0], 3), []);
-    const WEB = useMemo(() => generateNodes(swLabels, [-4.0, -1, 0], 2.5), []);
-    const ML = useMemo(() => generateNodes(mlLabels, [4.0, -1, 0], 2.5), []);
+    // Generate all clusters on the EXACT SAME Z=0 plane per user request
+    const HARDWARE = useMemo(() => generateNodes(20, [0, 4, 0], 3), []);
+    const WEB = useMemo(() => generateNodes(15, [-4.5, -3, 0], 2.5), []);
+    const ML = useMemo(() => generateNodes(15, [4.5, -3, 0], 2.5), []);
 
     // Inter-domain connections (connecting closest points between hardware and others)
-    const connectClusters = (nodesA: SkillNode[], nodesB: SkillNode[]) => {
+    const connectClusters = (nodesA: THREE.Vector3[], nodesB: THREE.Vector3[]) => {
         const arr = [];
         for (let i = 0; i < nodesA.length; i++) {
             for (let j = 0; j < nodesB.length; j++) {
-                if (nodesA[i].pos.distanceTo(nodesB[j].pos) < 6.0) { // Connect if they are within bounding distance
-                    arr.push(nodesA[i].pos.x, nodesA[i].pos.y, nodesA[i].pos.z);
-                    arr.push(nodesB[j].pos.x, nodesB[j].pos.y, nodesB[j].pos.z);
+                if (nodesA[i].distanceTo(nodesB[j]) < 6.0) { // Connect if they are within bounding distance
+                    arr.push(nodesA[i].x, nodesA[i].y, nodesA[i].z);
+                    arr.push(nodesB[j].x, nodesB[j].y, nodesB[j].z);
                     // Just 1-2 connections max so we break early if found
                     break;
                 }
@@ -189,9 +155,9 @@ export default function SkillNetwork() {
 
     return (
         <group scale={1.6}>
-            <AnimatedCluster initialNodes={HARDWARE} color="#0ea5e9" label="MECHATRONICS // HARDWARE" labelPos={[0, 6.0, 0]} />
-            <AnimatedCluster initialNodes={WEB} color="#10b981" label="SOFTWARE // WEB" labelPos={[-4.0, 2.0, 0]} />
-            <AnimatedCluster initialNodes={ML} color="#f43f5e" label="MACHINE LEARNING // DATA" labelPos={[4.0, 2.0, 0]} />
+            <AnimatedCluster initialNodes={HARDWARE} color="#0ea5e9" label="MECHATRONICS // HARDWARE" labelPos={[0, 8, 0]} />
+            <AnimatedCluster initialNodes={WEB} color="#10b981" label="SOFTWARE // WEB" labelPos={[-4.5, -6.5, 0]} />
+            <AnimatedCluster initialNodes={ML} color="#f43f5e" label="MACHINE LEARNING // DATA" labelPos={[4.5, -6.5, 0]} />
             
             {/* Very faint background lines connecting the clusters */}
             <lineSegments>
