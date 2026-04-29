@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
 import SkillNetwork from '@/components/SkillNetwork';
 import { useRef, useState, useEffect } from 'react';
 import TerminalCard from '@/components/TerminalCard';
@@ -234,18 +233,22 @@ export default function PortraitPage() {
                     </div>
                 </div>
 
+                {/* Skills Network Section */}
+                <div className="w-full max-w-7xl mx-auto px-6 sm:px-12 mt-16 mb-8">
+                    <h2 className="text-2xl font-mono font-bold text-zinc-800 dark:text-zinc-200 tracking-widest uppercase mb-2">
+                        <span className="text-cyan-500">{'>'}</span> Skills_Network
+                    </h2>
+                    <p className="font-mono text-xs text-zinc-500 dark:text-zinc-500 tracking-wide">
+                        [ click a cluster to zoom in — click again to zoom out ]
+                    </p>
+                </div>
+
                 {/* Bottom 3D Canvas Area */}
-                <div className="relative w-full h-[800px] bg-transparent">
+                <div className="relative w-full h-[900px] bg-transparent cursor-pointer">
                     <Canvas camera={{ position: [0, 0, 26], fov: 45 }}>
                         <ambientLight intensity={0.5} />
                         <pointLight position={[10, 10, 10]} intensity={1} />
                         <SkillNetwork />
-                        <OrbitControls
-                            enableZoom={false}
-                            enablePan={false}
-                            autoRotate={false}
-                            dampingFactor={0.05}
-                        />
                     </Canvas>
                 </div>
 
